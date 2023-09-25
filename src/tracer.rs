@@ -14,6 +14,8 @@ pub use filter::Filter;
 
 /// Different BSDFs.
 mod bxdfs;
+
+mod bsdf;
 /// Abstraction for a camera
 mod camera;
 /// Color struct
