@@ -14,7 +14,7 @@ pub use filter::Filter;
 
 /// Different BSDFs.
 mod bxdfs;
-
+mod bxdf;
 mod bsdf;
 /// Abstraction for a camera
 mod camera;
