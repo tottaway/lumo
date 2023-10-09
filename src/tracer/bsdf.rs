@@ -27,13 +27,19 @@ impl BSDF {
         self.ng = ng;
     }
 
-    pub fn eval(&self, wo: Direction, wi: Direction, mode: Transport) -> Color {
+    pub fn f(
+        &self,
+        wo: Direction,
+        wi: Direction,
+        albedo: Color,
+        mode: Transport
+    ) -> Color {
         let wo_local = self.uvw.to_local(wo);
         let wi_local = self.uvw.to_local(wi);
 
         self.BxDFs.iter()
             .fold(Color::BLACK, |color, bxdf| {
-                color + bxdf.f(wo_local, wi_local, Color::BLACK, mode)
+                color + bxdf.f(wo_local, wi_local, albedo, mode)
             })
     }
 

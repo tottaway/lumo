@@ -8,7 +8,7 @@ use crate::tracer::{
 /// Describes which material an object is made out of
 pub enum Material {
     /// Material with microfacet BxDF(s)
-    Microfacet(BSDF, MfDistribution, Texture),
+    Microfacet(BSDF, Texture, MfDistribution),
     /// Material without microfacet BxDF(s)
     Standard(BSDF, Texture),
     /// Emits light
@@ -20,18 +20,6 @@ pub enum Material {
 }
 
 impl Material {
-    /// Helper function to create a microfacet material
-    fn microfacet(
-        texture: Texture,
-        roughness: Float,
-        eta: Float,
-        metallicity: Float,
-        transparent: bool
-    ) -> Self {
-        let mfd = MfDistribution::new(roughness, refraction_idx, metallicity, transparent);
-        Self::Microfacet(texture, mfd)
-    }
-
     /// Metallic microfacet material
     pub fn metallic(texture: Texture, roughness: Float) -> Self {
         let mfd = MfDistribution::new(roughness, 1.5, 1.0);
@@ -120,6 +108,10 @@ impl Material {
         }
     }
 
+    // instead of this we want get BSDF, that updates normals albedos and such.
+    // and gives REFERENCE to the updated BSDF (RACE CONDITIONS? yes it is a problem)
+    // and how should we handle mediums then....
+    // to avoid race conditions, maybe the BSDF itself should take normals and allbedo as args....
     /// What is the color at `h`?
     pub fn bsdf_f(
         &self,
@@ -131,19 +123,10 @@ impl Material {
         let ns = h.ns;
         let ng = h.ng;
         match self {
-            Self::Mirror => Color::WHITE,
-            Self::Glass(eta) => {
-                match mode {
-                    Transport::Importance => Color::WHITE,
-                    Transport::Radiance => {
-                        let inside = wi.dot(ng) > 0.0;
-                        if inside {
-                            Color::splat(1.0 / (eta * eta))
-                        } else {
-                            Color::splat(eta * eta)
-                        }
-                    }
-                }
+            Self::Standard(bsdf, texture) | Self::Microfacet(bsdf, texture, _) => {
+                bsdf.update_normals(ns, ng);
+                let albedo = texture.albedo_at(h);
+                bsdf.f(wo, wi, albedo, mode)
             }
             // volumetric BSDF handled in integrator to cancel out PDF
             Self::Volumetric(_, sigma_t, sigma_s) => {
@@ -154,10 +137,6 @@ impl Material {
 
                 if pdf == 0.0 { Color::WHITE } else { *sigma_s / pdf }
             }
-            Self::Microfacet(t, mfd) => {
-                bxdfs::bsdf_microfacet(wo, wi, ng, ns, mode, t.albedo_at(h), mfd)
-            }
-            Self::Lambertian(t) => t.albedo_at(h) / crate::PI,
             _ => Color::BLACK,
         }
     }
@@ -165,22 +144,8 @@ impl Material {
     /// Computes the shading cosine coefficient per material
     pub fn shading_cosine(&self, wi: Direction, ns: Normal) -> Float {
         match self {
-            Self::Microfacet(..) | Self::Lambertian(_) => ns.dot(wi).abs(),
-            _ => 1.0
-        }
-    }
-
-    /// How does `ro` get scattered at `ho`?
-    pub fn bsdf_pdf(&self, ho: &Hit, ro: &Ray) -> Option<Box<dyn Pdf>> {
-        match self {
-            Self::Mirror => bxdfs::brdf_mirror_pdf(ho, ro),
-            Self::Glass(ridx) => bxdfs::btdf_glass_pdf(ho, ro, *ridx),
-            Self::Volumetric(g, ..) => bxdfs::brdf_volumetric_pdf(ro, *g),
-            Self::Lambertian(_) => Some(Box::new(CosPdf::new(ho.ns))),
-            Self::Microfacet(t, mfd) => {
-                bxdfs::bsdf_microfacet_pdf(ho, ro, t.albedo_at(ho), mfd)
-            }
-            Self::Light(_) | Self::Blank => None,
+            //Self::Microfacet(..) | Self::Lambertian(_) => ns.dot(wi).abs(),
+            _ => ns.dot(wi).abs()
         }
     }
 }

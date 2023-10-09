@@ -14,7 +14,13 @@ pub enum BxDF {
 }
 
 impl BxDF {
-    pub fn f(&self, wo: Direction, wi: Direction, albedo: Color, mode: Transport) -> Color {
+    pub fn f(
+        &self,
+        wo: Direction,
+        wi: Direction,
+        albedo: Color,
+        mode: Transport
+    ) -> Color {
         match self {
             Self::Lambertian => albedo / crate::PI,
             Self::Reflection => Color::WHITE,
