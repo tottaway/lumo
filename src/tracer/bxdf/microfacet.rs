@@ -1,6 +1,28 @@
 use super::*;
 
 /*
+ * MICROFACET DIFFUSE
+ * Disney diffuse (Burley 2012) with renormalization to conserve energy
+ * as done in Frostbite (Lagarde et al. 2014)
+ */
+
+pub fn diffuse_f(
+    wo: Direction,
+    wi: Direction,
+    albedo: Color,
+    mfd: &MfDistribution,
+) -> Color {
+    let v = -wo;
+    let wh = (v + wi).normalize();
+
+    let cos_theta_v = v.z;
+    let cos_theta_wi = wi.z;
+    let cos_theta_wh = wh.z;
+    let f = mfd.f(v, wh, albedo);
+    (Color::WHITE - f) * albedo * mfd.disney_diffuse(cos_theta_v, cos_theta_wi, cos_theta_wh) / crate::PI
+}
+
+/*
  * MICROFACET TRANSMISSION
  */
 

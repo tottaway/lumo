@@ -8,6 +8,7 @@ pub enum BxDF {
     Lambertian,
     Transmission(Float),
     Reflection,
+    MfDiffuse(MfDistribution),
     MfReflection(MfDistribution),
     MfTransmission(MfDistribution),
 }
@@ -18,6 +19,7 @@ impl BxDF {
             Self::Lambertian => albedo / crate::PI,
             Self::Reflection => Color::WHITE,
             Self::Transmission(eta) => scatter::transmission_f(wo, *eta, mode),
+            Self::MfDiffuse(mfd) => microfacet::diffuse_f(wo, wi, albedo, mfd),
             Self::MfReflection(mfd) => microfacet::reflection_f(wo, wi, mfd, albedo),
             Self::MfTransmission(mfd) => microfacet::transmission_f(wo, wi, mfd, albedo, mode),
         }
@@ -28,6 +30,7 @@ impl BxDF {
             Self::Reflection => Some( Direction::new(wo.x, wo.y, -wo.z) ),
             Self::Lambertian => Some( rand_utils::square_to_cos_hemisphere(rand_sq) ),
             Self::Transmission(eta) => scatter::transmission_sample(wo, *eta, rand_sq),
+            Self::MfDiffuse(_) => Some( rand_utils::square_to_cos_hemisphere(rand_sq) ),
             Self::MfReflection(mfd) => microfacet::reflection_sample(wo, mfd, rand_sq),
             Self::MfTransmission(mfd) => microfacet::transmission_sample(wo, mfd, rand_sq),
         }
@@ -37,6 +40,7 @@ impl BxDF {
         match self {
             Self::Reflection | Self::Transmission(_) => 1.0,
             Self::Lambertian => scatter::lambertian_pdf(wi),
+            Self::MfDiffuse(_) => scatter::lambertian_pdf(wi),
             Self::MfReflection(mfd) => microfacet::reflection_pdf(wo, wi, mfd),
             Self::MfTransmission(mfd) => microfacet::transmission_pdf(wo, wi, mfd, swap_dir),
         }
