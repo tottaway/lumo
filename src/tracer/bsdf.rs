@@ -1,5 +1,5 @@
-use crate::{ Direction, Point, Normal, Transport, Float, Vec2 };
-use crate::tracer::{ Color, ray::Ray, bxdf::BxDF, onb::Onb };
+use crate::{ Direction, Normal, Transport, Float, Vec2 };
+use crate::tracer::{ Color, bxdf::BxDF, onb::Onb };
 use rand::prelude::SliceRandom;
 
 pub struct BSDF {

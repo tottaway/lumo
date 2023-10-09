@@ -12,8 +12,6 @@ pub use scene::Scene;
 pub use texture::Texture;
 pub use filter::Filter;
 
-/// Different BSDFs.
-mod bxdfs;
 mod bxdf;
 mod bsdf;
 /// Abstraction for a camera
@@ -34,8 +32,6 @@ mod microfacet;
 mod object;
 /// Utility struct for orthonormal basis.
 mod onb;
-/// Implementation of different probability density functions for sampling.
-mod pdfs;
 /// Abstractions for rays.
 mod ray;
 /// Scene that describes the 3D world to render.

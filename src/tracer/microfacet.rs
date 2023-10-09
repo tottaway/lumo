@@ -7,29 +7,25 @@ pub struct MicrofacetConfig {
     /// Roughness of the surface (α) [0,1]
     pub roughness: Float,
     /// Refraction index of the material >= 1.0
-    pub refraction_idx: Float,
+    pub eta: Float,
     /// Ratio of how metallic the material is [0,1]
     pub metallicity: Float,
-    /// Transparency of the material
-    pub transparent: bool,
 }
 
 impl MicrofacetConfig {
     pub fn new(
         roughness: Float,
-        refraction_idx: Float,
+        eta: Float,
         metallicity: Float,
-        transparent: bool
     ) -> Self {
         assert!((0.0..=1.0).contains(&roughness));
         assert!((0.0..=1.0).contains(&metallicity));
-        assert!(refraction_idx >= 1.0);
+        assert!(eta >= 1.0);
 
         Self {
             roughness: roughness.max(1e-5),
-            refraction_idx,
+            eta,
             metallicity,
-            transparent,
         }
     }
 }
@@ -47,16 +43,10 @@ pub enum MfDistribution {
 impl MfDistribution {
     pub fn new(
         roughness: Float,
-        refraction_idx: Float,
+        eta: Float,
         metallicity: Float,
-        transparent: bool
     ) -> Self {
-        Self::Ggx(MicrofacetConfig::new(roughness, refraction_idx, metallicity, transparent))
-    }
-
-    /// Is the material transparent?
-    pub fn is_transparent(&self) -> bool {
-        self.get_config().transparent
+        Self::Ggx(MicrofacetConfig::new(roughness, eta, metallicity))
     }
 
     /// might need tuning, send ratio that emittance is multiplied with?
@@ -69,17 +59,12 @@ impl MfDistribution {
         self.get_config().roughness < 1e-2
     }
 
-    /// Gets the refraction index
-    pub fn get_rfrct_idx(&self) -> Float {
-        self.get_config().refraction_idx
-    }
-
     pub fn eta(&self) -> Float {
         self.get_rfrct_idx()
     }
 
     /// Get roughness from config
-    pub fn get_roughness(&self) -> Float {
+    pub fn roughness(&self) -> Float {
         self.get_config().roughness
     }
 
@@ -94,16 +79,16 @@ impl MfDistribution {
     /// as done in Frostbite (Lagarde et al. 2014)
     pub fn disney_diffuse(
         &self,
-        no_dot_v: Float,
-        no_dot_wh: Float,
-        no_dot_wi: Float
+        cos_theta_v: Float,
+        cos_theta_wh: Float,
+        cos_theta_wi: Float
     ) -> Float {
-        let roughness2 = self.get_config().roughness.powi(2);
+        let roughness2 = self.roughness().powi(2);
         let energy_bias = 0.5 * roughness2;
-        let fd90 = energy_bias + 2.0 * no_dot_wh.powi(2) * roughness2;
+        let fd90 = energy_bias + 2.0 * cos_theta_wh.powi(2) * roughness2;
 
-        let view_scatter = 1.0 + (fd90 - 1.0) * (1.0 - no_dot_v).powi(5);
-        let light_scatter = 1.0 + (fd90 - 1.0) * (1.0 - no_dot_wi).powi(5);
+        let view_scatter = 1.0 + (fd90 - 1.0) * (1.0 - cos_theta_v).powi(5);
+        let light_scatter = 1.0 + (fd90 - 1.0) * (1.0 - cos_theta_wi).powi(5);
 
         let energy_factor = 1.0 + roughness2 * (1.0 / 1.51 - 1.0);
 
@@ -117,12 +102,11 @@ impl MfDistribution {
     /// * GGX - α^2 / (π * (cos^4(θ) * (α^2 - 1.0) + 1.0)^2)
     ///
     /// # Arguments
-    /// * `wh` - Microsurface normal
-    /// * `no` - Macrosurface normal
-    pub fn d(&self, wh: Normal, no: Normal) -> Float {
+    /// * `wh` - Microsurface normal in shading space
+    pub fn d(&self, wh: Normal) -> Float {
         match self {
             Self::Ggx(cfg) => {
-                let cos2_theta = wh.dot(no).powi(2);
+                let cos2_theta = wh.z.powi(2);
 
                 if cos2_theta < crate::EPSILON {
                     0.0
@@ -134,7 +118,7 @@ impl MfDistribution {
                 }
             }
             Self::Beckmann(cfg) => {
-                let cos2_theta = wh.dot(no).powi(2);
+                let cos2_theta = wh.z.powi(2);
 
                 if cos2_theta < crate::EPSILON {
                     0.0
@@ -150,15 +134,19 @@ impl MfDistribution {
     }
 
     /// Fresnel term with Schlick's approximation
-    pub fn f(&self, wo: Direction, wh: Normal, color: Color) -> Color {
-        let eta = self.get_config().refraction_idx;
+    /// # Arguments
+    /// * `v`      - Direction to viewer in shadping space
+    /// * `wh`     - Microsurface normal in shading space
+    /// * `albedo` - Albedo at the point of impact
+    pub fn f(&self, v: Direction, wh: Normal, albedo: Color) -> Color {
+        let eta = self.eta();
         let metallicity = self.get_config().metallicity;
 
         let f0 = (eta - 1.0) / (eta + 1.0);
-        let f0 = Color::splat(f0 * f0).lerp(color, metallicity);
+        let f0 = Color::splat(f0 * f0).lerp(albedo, metallicity);
 
-        let wo_dot_wh = wo.dot(wh).abs();
-        f0 + (Color::WHITE - f0) * (1.0 - wo_dot_wh).powi(5)
+        let v_dot_wh = v.dot(wh).abs();
+        f0 + (Color::WHITE - f0) * (1.0 - v_dot_wh).powi(5)
     }
 
     /// Shadow-masking term. Used to make sure that only microfacets that are
@@ -166,27 +154,30 @@ impl MfDistribution {
     /// in Chapter 8.4.3 of PBR due to Heitz et al. 2013.
     ///
     /// # Arguments
-    /// * `v` - View direction
-    /// * `wi` - Direction of ray away from the point of impact
-    /// * `wh` - Microsurface normal
-    /// * `no` - Macrosurface normal
-    pub fn g(&self, v: Direction, wi: Direction, wh: Normal, no: Normal) -> Float {
+    /// * `v`  - View direction in shading space
+    /// * `wi` - Direction of ray away from the point of impact in shading space
+    /// * `wh` - Microsurface normal in shading space
+    pub fn g(&self, v: Direction, wi: Direction, wh: Normal) -> Float {
         // signum to fix refraction
-        let chi = wh.dot(no).signum() * v.dot(wh) / v.dot(no);
+        let cos_theta_wh = wh.z;
+        let cos_theta_v = v.z;
+        let chi = cos_theta_wh.signum() * v.dot(wh) / cos_theta_v;
         if chi < crate::EPSILON {
             0.0
         } else {
-            1.0 / (1.0 + self.lambda(v, no) + self.lambda(wi, no))
+            1.0 / (1.0 + self.lambda(v) + self.lambda(wi))
         }
     }
 
-    pub fn g1(&self, v: Direction, wh: Normal, no: Normal) -> Float {
+    pub fn g1(&self, v: Direction, wh: Normal) -> Float {
         // signum to fix refraction
-        let chi = wh.dot(no).signum() * v.dot(wh) / v.dot(no);
+        let cos_theta_wh = wh.z;
+        let cos_theta_v = v.z;
+        let chi = cos_theta_wh.signum() * v.dot(wh) / cos_theta_v;
         if chi < crate::EPSILON {
             0.0
         } else {
-            1.0 / (1.0 + self.lambda(v, no))
+            1.0 / (1.0 + self.lambda(v))
         }
     }
 
@@ -194,12 +185,11 @@ impl MfDistribution {
     /// Beckmann with polynomial approximation and GGX exactly. PBR Chapter 8.4.3
     ///
     /// # Arguments
-    /// * `w` - Direction to consider
-    /// * `no` - Macrosurface normal
-    fn lambda(&self, w: Direction, no: Normal) -> Float {
+    /// * `w` - Direction to consider in shading space
+    fn lambda(&self, w: Direction) -> Float {
         match self {
             Self::Ggx(cfg) => {
-                let cos2_theta = w.dot(no).powi(2);
+                let cos2_theta = w.z.powi(2);
                 if cos2_theta < crate::EPSILON {
                     0.0
                 } else {
@@ -210,7 +200,7 @@ impl MfDistribution {
                 }
             }
             Self::Beckmann(cfg) => {
-                let cos2_theta = w.dot(no).powi(2);
+                let cos2_theta = w.z.powi(2);
                 if cos2_theta < crate::EPSILON {
                     0.0
                 } else {
@@ -233,29 +223,28 @@ impl MfDistribution {
     pub fn probability_ndf_sample(&self, albedo: Color) -> Float {
         let cfg = self.get_config();
 
-        let f0 = (cfg.refraction_idx - 1.0) / (cfg.refraction_idx + 1.0);
+        let f0 = (cfg.eta - 1.0) / (cfg.eta + 1.0);
         let f0 = f0 * f0;
 
         (1.0 - cfg.metallicity) * f0 + cfg.metallicity * albedo.mean()
     }
 
-    /// Probability that `wh` got sampled
+    /// Probability that `wh` got sampled. `wh` and `v` in shading space.
     pub fn sample_normal_pdf(
         &self,
         wh: Normal,
         v: Direction,
-        no: Normal
     ) -> Float {
         let pdf = match self {
             Self::Beckmann(..) => {
-                let wh_dot_no = wh.dot(no);
-                self.d(wh, no) * wh_dot_no
+                let cos_theta_wh = wh.z;
+                self.d(wh) * cos_theta_wh
             }
             Self::Ggx(..) => {
                 let wh_dot_v = wh.dot(v);
-                let no_dot_v = no.dot(v);
+                let cos_theta_v = v.z;
 
-                self.g1(v, wh, no) * self.d(wh, no) * wh_dot_v / no_dot_v
+                self.g1(v, wh) * self.d(wh) * wh_dot_v / cos_theta_v
             }
         };
 
