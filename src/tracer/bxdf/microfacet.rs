@@ -1,5 +1,9 @@
 use super::*;
 
+/*
+ * MICROFACET TRANSMISSION
+ */
+
 pub fn transmission_f(
     wo: Direction,
     wi: Direction,
@@ -46,6 +50,28 @@ pub fn transmission_f(
         / (eta_ratio * wh_dot_wi + wh_dot_v).powi(2)
 }
 
+pub fn transmission_sample(
+    wo: Direction,
+    mfd: &MfDistribution,
+    rand_sq: Vec2
+) -> Option<Direction> {
+    let v = -wo;
+    let wh = mfd.sample_normal(v, rand_sq).normalize();
+    let inside = v.z < 0.0;
+    let eta_ratio = if inside {
+        mfd.eta()
+    } else {
+        1.0 / mfd.eta()
+    };
+
+    // here we refract v around wh
+    Some( Direction::Z )
+}
+
+/*
+ * MICROFACET REFLECTION
+ */
+
 pub fn reflection_f(
     wo: Direction,
     wi: Direction,
@@ -62,4 +88,23 @@ pub fn reflection_f(
     let g = mfd.g(v, wi, wh, Normal::Z);
 
     d * f * g / (4.0 * cos_theta_v * cos_theta_wi)
+}
+
+pub fn reflection_sample(
+    wo: Direction,
+    mfd: &MfDistribution,
+    rand_sq: Vec2
+) -> Option<Direction> {
+    let v = -wo;
+    let wh = self.mfd.sample_normal(v, rand_sq).normalize();
+    // reflect v around wh
+    let wi = Direction::Z;
+
+    if wi.z <= 0.0 {
+        // bad sample, do something else?
+        None
+    } else {
+        Some( wi )
+    }
+
 }

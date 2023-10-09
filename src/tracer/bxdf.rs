@@ -28,6 +28,8 @@ impl BxDF {
             Self::Reflection => Some( Direction::new(wo.x, wo.y, -wo.z) ),
             Self::Lambertian => Some( rand_utils::square_to_cos_hemisphere(rand_sq) ),
             Self::Transmission(eta) => scatter::transmission_sample(wo, *eta, rand_sq),
+            Self::MfReflection(mfd) => microfacet::reflection_sample(wo, mfd, rand_sq),
+            Self::MfTransmission(mfd) => microfacet::transmission_sample(wo, mfd, rand_sq),
         }
     }
 
