@@ -1,17 +1,23 @@
 use crate::{ Direction, Normal, Transport, Float, Vec2, rand_utils };
 use crate::tracer::{ Color, ray::Ray };
 
+mod microfacet;
+
 pub enum BxDF {
-    Lambertian(Color),
+    Lambertian,
     Transmission(Float),
     Reflection,
+    MfReflection(MfDistribution),
+    MfTransmission(MfDistribution),
 }
 
 impl BxDF {
-    pub fn eval(&self, wo: Direction, wi: Direction, mode: Transport) -> Color {
+    pub fn eval(&self, wo: Direction, wi: Direction, albedo: Color, mode: Transport) -> Color {
         match self {
             Self::Reflection => Color::WHITE,
-            Self::Lambertian(albedo) => *albedo / crate::PI,
+            Self::Lambertian => albedo / crate::PI,
+            Self::MfReflection(mfd) => microfacet::reflect(wo, wi, mfd, albedo),
+            Self::MfTransmission(mfd) => microfacet::transmission(wo, wi, mfd, albedo, mode),
             Self::Transmission(eta) => {
                 match mode {
                     Transport::Importance => Color::WHITE,

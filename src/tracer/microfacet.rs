@@ -74,6 +74,10 @@ impl MfDistribution {
         self.get_config().refraction_idx
     }
 
+    pub fn eta(&self) -> Float {
+        self.get_rfrct_idx()
+    }
+
     /// Get roughness from config
     pub fn get_roughness(&self) -> Float {
         self.get_config().roughness
