@@ -1,6 +1,6 @@
 use super::*;
 
-pub fn transmission(
+pub fn transmission_f(
     wo: Direction,
     wi: Direction,
     mfd: &MfDistribution,
@@ -46,7 +46,7 @@ pub fn transmission(
         / (eta_ratio * wh_dot_wi + wh_dot_v).powi(2)
 }
 
-pub fn reflection(
+pub fn reflection_f(
     wo: Direction,
     wi: Direction,
     mfd: &MfDistribution,

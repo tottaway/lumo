@@ -32,7 +32,7 @@ impl BSDF {
 
         self.BxDFs.iter()
             .fold(Color::BLACK, |color, bxdf| {
-                color + bxdf.eval(wo_local, wi_local, mode)
+                color + bxdf.f(wo_local, wi_local, Color::BLACK, mode)
             })
     }
 
