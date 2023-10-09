@@ -1,22 +1,18 @@
 use crate::{ Normal, Direction, Transport, Float, Vec3 };
 use crate::tracer::{
-    bxdfs, Color, hit::Hit, ray::Ray,
+    Color, hit::Hit, ray::Ray,
     microfacet::MfDistribution,
-    texture::Texture, pdfs::{Pdf, CosPdf}
+    texture::Texture, bsdf::BSDF, bxdf::BxDF,
 };
 
 /// Describes which material an object is made out of
 pub enum Material {
-    /// Glossy
-    Microfacet(Texture, MfDistribution),
-    /// Lambertian diffuse material. Mostly for debugging
-    Lambertian(Texture),
+    /// Material with microfacet BxDF(s)
+    Microfacet(BSDF, MfDistribution, Texture),
+    /// Material without microfacet BxDF(s)
+    Standard(BSDF, Texture),
     /// Emits light
     Light(Texture),
-    /// Perfect reflection
-    Mirror,
-    /// Perfect refraction with refraction index as argument
-    Glass(Float),
     /// Volumetric material for mediums. `scatter_param`, `sigma_t`, `sigma_s`
     Volumetric(Float, Vec3, Color),
     /// Not specified. Used with objects that are built on top of other objects.
@@ -25,10 +21,10 @@ pub enum Material {
 
 impl Material {
     /// Helper function to create a microfacet material
-    pub fn microfacet(
+    fn microfacet(
         texture: Texture,
         roughness: Float,
-        refraction_idx: Float,
+        eta: Float,
         metallicity: Float,
         transparent: bool
     ) -> Self {
@@ -38,52 +34,77 @@ impl Material {
 
     /// Metallic microfacet material
     pub fn metallic(texture: Texture, roughness: Float) -> Self {
-        Self::microfacet(texture, roughness, 1.5, 1.0, false)
+        let mfd = MfDistribution::new(roughness, 1.5, 1.0);
+        let bsdf = BSDF::new()
+            .add(BxDF::MfDiffuse(mfd))
+            .add(BxDF::MfReflection(mfd));
+        Self::Microfacet(bsdf, texture, mfd)
     }
 
     /// Specular microfacet material
     pub fn specular(texture: Texture, roughness: Float) -> Self {
-        Self::microfacet(texture, roughness, 1.5, 0.0, false)
+        let mfd = MfDistribution::new(roughness, 1.5, 0.0);
+        let bsdf = BSDF::new()
+            .add(BxDF::MfDiffuse(mfd))
+            .add(BxDF::MfReflection(mfd));
+        Self::Microfacet(bsdf, texture, mfd)
     }
 
     /// Diffuse material
     pub fn diffuse(texture: Texture) -> Self {
-        Self::microfacet(texture, 1.0, 1.5, 0.0, false)
+        let mfd = MfDistribution::new(1.0, 1.5, 0.0);
+        let bsdf = BSDF::new()
+            .add(BxDF::MfDiffuse(mfd))
+            .add(BxDF::MfReflection(mfd));
+        Self::Microfacet(bsdf, texture, mfd)
     }
 
     /// Transparent material
-    pub fn transparent(texture: Texture, roughness: Float, refraction_idx: Float) -> Self {
-        Self::microfacet(texture, roughness, refraction_idx, 0.0, true)
+    pub fn transparent(texture: Texture, roughness: Float, eta: Float) -> Self {
+        let mfd = MfDistribution::new(roughness, eta, 0.0);
+        let bsdf = BSDF::new()
+            .add(BxDF::MfTransmission(mfd));
+        Self::Microfacet(bsdf, texture, mfd)
     }
 
     /// Perfect reflection
     pub fn mirror() -> Self {
-        Self::Mirror
+        let bsdf = BSDF::new()
+            .add(BxDF::Reflection);
+        Self::Standard(bsdf, Texture::default())
     }
 
     /// Perfect refraction
-    pub fn glass(refraction_index: Float) -> Self {
-        assert!(refraction_index >= 1.0);
-        Self::Glass(refraction_index)
+    pub fn glass(eta: Float) -> Self {
+        assert!(eta >= 1.0);
+        let bsdf = BSDF::new()
+            .add(BxDF::Transmission(eta));
+        Self::Standard(bsdf, Texture::default())
     }
 
     /// Is the material specular? I.e. reflects light
     pub fn is_specular(&self) -> bool {
+        false
+        /*
         match self {
             Self::Mirror | Self::Glass(..) => true,
             Self::Microfacet(_, mfd) => mfd.is_specular(),
             _ => false,
-        }
+    }
+         */
     }
 
     /// Does the material scattering follow delta distribution?
     /// Dumb hack to make delta things not have shadows in path trace.
     pub fn is_delta(&self) -> bool {
+        false
+        /*
         match self {
             Self::Lambertian(_) => false,
             Self::Microfacet(_, mfd) => mfd.is_delta(),
             _ => true,
-        }
+    }
+         */
     }
 
 

@@ -28,6 +28,10 @@ pub enum Texture {
     Image(Image),
 }
 
+impl Default for Texture {
+    fn default() -> Self { Self::Solid(Color::WHITE) }
+}
+
 impl Texture {
     /// Colour at hit `h`
     pub fn albedo_at(&self, h: &Hit) -> Color {

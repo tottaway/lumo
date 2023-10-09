@@ -17,8 +17,9 @@ impl BSDF {
         }
     }
 
-    pub fn add(&mut self, bxdf: BxDF) {
-        self.BxDFs.push(bxdf)
+    pub fn add(mut self, bxdf: BxDF) -> Self {
+        self.BxDFs.push(bxdf);
+        self
     }
 
     pub fn update_normals(&mut self, ns: Normal, ng: Normal) {
