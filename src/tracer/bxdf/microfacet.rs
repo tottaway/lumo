@@ -68,6 +68,53 @@ pub fn transmission_sample(
     Some( Direction::Z )
 }
 
+pub fn transmission_pdf(
+    wo: Direction,
+    wi: Direction,
+    mfd: &MfDistribution,
+    swap_dir: bool,
+) -> Float {
+    let v = -wo;
+    let (v, wi) = if swap_dir { (wi, v) } else { (v, wi) };
+    let v_inside = v.z < 0.0;
+    let wi_inside = wi.z < 0.0;
+
+
+    if v_inside == wi_inside {
+        /* same hemisphere. check total internal reflection. */
+        let wh = (v + wi).normalize();
+        let wh_dot_v = wh.dot(v);
+        let sin2_to = 1.0 - wh_dot_v * wh_dot_v;
+        let sin2_ti = sin2_to * mfd.eta().powi(2);
+
+        if sin2_ti > 1.0 {
+            mfd.sample_normal_pdf(wh, v, Normal::Z) / (4.0 * wh_dot_v)
+        } else {
+            /* not total internal reflection... */
+            0.0
+        }
+    } else {
+        let eta_ratio = if v_inside {
+            1.0 / mfd.eta()
+        } else {
+            mfd.eta()
+        };
+
+        let wh = -(v + wi * eta_ratio).normalize();
+        let wh_dot_wi = wi.dot(wh);
+        let wh_dot_v = wh.dot(v);
+
+        if wh_dot_wi * wh_dot_v > 0.0 {
+            /* same hemisphere w.r.t. wh */
+            0.0
+        } else {
+            mfd.sample_normal_pdf(wh, v, Normal::Z)
+                * (eta_ratio * eta_ratio * wh_dot_wi).abs()
+                / (wh_dot_v + eta_ratio * wh_dot_wi).powi(2)
+        }
+    }
+}
+
 /*
  * MICROFACET REFLECTION
  */
@@ -96,7 +143,7 @@ pub fn reflection_sample(
     rand_sq: Vec2
 ) -> Option<Direction> {
     let v = -wo;
-    let wh = self.mfd.sample_normal(v, rand_sq).normalize();
+    let wh = mfd.sample_normal(v, rand_sq).normalize();
     // reflect v around wh
     let wi = Direction::Z;
 
@@ -106,5 +153,16 @@ pub fn reflection_sample(
     } else {
         Some( wi )
     }
+}
 
+pub fn reflection_pdf(
+    wo: Direction,
+    wi: Direction,
+    mfd: &MfDistribution,
+) -> Float {
+    let v = -wo;
+    let wh = (v + wi).normalize();
+    let wh_dot_v = v.dot(wh);
+
+    mfd.sample_normal_pdf(wh, v, Normal::Z) / (4.0 * wh_dot_v)
 }

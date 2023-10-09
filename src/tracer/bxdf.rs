@@ -1,5 +1,5 @@
 use crate::{ Direction, Normal, Transport, Float, Vec2, rand_utils };
-use crate::tracer::{ Color, ray::Ray, microfacet::MfDistribution };
+use crate::tracer::{ Color, microfacet::MfDistribution };
 
 mod microfacet;
 mod scatter;
@@ -37,6 +37,8 @@ impl BxDF {
         match self {
             Self::Reflection | Self::Transmission(_) => 1.0,
             Self::Lambertian => scatter::lambertian_pdf(wi),
+            Self::MfReflection(mfd) => microfacet::reflection_pdf(wo, wi, mfd),
+            Self::MfTransmission(mfd) => microfacet::transmission_pdf(wo, wi, mfd, swap_dir),
         }
     }
 }
