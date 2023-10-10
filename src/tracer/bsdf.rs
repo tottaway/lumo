@@ -69,6 +69,7 @@ impl BSDF {
 
         self.BxDFs.choose(&mut rand::thread_rng())
             .and_then(|bxdf| bxdf.sample(wo_local, rand_sq))
+            .map(|wi| uvw.to_world(wi))
     }
 
     /// PDF for the BSDF
