@@ -1,5 +1,26 @@
 use super::*;
 
+/* util functions */
+fn reflect(v: Direction, no: Normal) -> Direction {
+    2.0 * v.project_onto(no) - v
+}
+
+fn refract(eta_ratio: Float, v: Direction, no: Normal) -> Direction {
+    /* Snell-Descartes law */
+    let cos_to = no.dot(v);
+    let sin2_to = 1.0 - cos_to * cos_to;
+    let sin2_ti = eta_ratio * eta_ratio * sin2_to;
+
+    /* total internal reflection */
+    if sin2_ti > 1.0 {
+        reflect(v, no)
+    } else {
+        let cos_ti = (1.0 - sin2_ti).sqrt();
+
+        -v * eta_ratio + (eta_ratio * cos_to - cos_ti) * no
+    }
+}
+
 /*
  * MICROFACET DIFFUSE
  * Disney diffuse (Burley 2012) with renormalization to conserve energy
@@ -19,7 +40,9 @@ pub fn diffuse_f(
     let cos_theta_wi = wi.z;
     let cos_theta_wh = wh.z;
     let f = mfd.f(v, wh, albedo);
-    (Color::WHITE - f) * albedo * mfd.disney_diffuse(cos_theta_v, cos_theta_wi, cos_theta_wh) / crate::PI
+    let disney = mfd.disney_diffuse(cos_theta_v, cos_theta_wi, cos_theta_wh);
+
+    (Color::WHITE - f) * albedo * disney / crate::PI
 }
 
 /*
@@ -63,9 +86,9 @@ pub fn transmission_f(
         return Color::BLACK;
     }
 
-    let d = mfd.d(wh, Normal::Z);
+    let d = mfd.d(wh);
     let f = mfd.f(v, wh, albedo);
-    let g = mfd.g(v, wi, wh, Normal::Z);
+    let g = mfd.g(v, wi, wh);
 
     scale * albedo * d * (Color::WHITE - f) * g
         * (wh_dot_wi * wh_dot_v / (cos_theta_wi * cos_theta_v)).abs()
@@ -86,8 +109,7 @@ pub fn transmission_sample(
         1.0 / mfd.eta()
     };
 
-    // here we refract v around wh
-    Some( Direction::Z )
+    Some( refract(eta_ratio, v, wh) )
 }
 
 pub fn transmission_pdf(
@@ -110,7 +132,7 @@ pub fn transmission_pdf(
         let sin2_ti = sin2_to * mfd.eta().powi(2);
 
         if sin2_ti > 1.0 {
-            mfd.sample_normal_pdf(wh, v, Normal::Z) / (4.0 * wh_dot_v)
+            mfd.sample_normal_pdf(wh, v) / (4.0 * wh_dot_v)
         } else {
             /* not total internal reflection... */
             0.0
@@ -130,7 +152,7 @@ pub fn transmission_pdf(
             /* same hemisphere w.r.t. wh */
             0.0
         } else {
-            mfd.sample_normal_pdf(wh, v, Normal::Z)
+            mfd.sample_normal_pdf(wh, v)
                 * (eta_ratio * eta_ratio * wh_dot_wi).abs()
                 / (wh_dot_v + eta_ratio * wh_dot_wi).powi(2)
         }
@@ -152,9 +174,9 @@ pub fn reflection_f(
     let cos_theta_wi = wi.z;
     let wh = (wi + v).normalize();
 
-    let d = mfd.d(wh, Normal::Z);
+    let d = mfd.d(wh);
     let f = mfd.f(v, wh, albedo);
-    let g = mfd.g(v, wi, wh, Normal::Z);
+    let g = mfd.g(v, wi, wh);
 
     d * f * g / (4.0 * cos_theta_v * cos_theta_wi)
 }
@@ -166,8 +188,7 @@ pub fn reflection_sample(
 ) -> Option<Direction> {
     let v = -wo;
     let wh = mfd.sample_normal(v, rand_sq).normalize();
-    // reflect v around wh
-    let wi = Direction::Z;
+    let wi = reflect(v, wh);
 
     if wi.z <= 0.0 {
         // bad sample, do something else?
@@ -186,5 +207,5 @@ pub fn reflection_pdf(
     let wh = (v + wi).normalize();
     let wh_dot_v = v.dot(wh);
 
-    mfd.sample_normal_pdf(wh, v, Normal::Z) / (4.0 * wh_dot_v)
+    mfd.sample_normal_pdf(wh, v) / (4.0 * wh_dot_v)
 }
