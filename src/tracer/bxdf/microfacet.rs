@@ -1,26 +1,29 @@
 use super::*;
 
 /* util functions */
-fn reflect(v: Direction, no: Normal) -> Direction {
-    2.0 * v.project_onto(no) - v
-}
+mod util {
+    use super::*;
 
-fn refract(eta_ratio: Float, v: Direction, no: Normal) -> Direction {
-    /* Snell-Descartes law */
-    let cos_to = no.dot(v);
-    let sin2_to = 1.0 - cos_to * cos_to;
-    let sin2_ti = eta_ratio * eta_ratio * sin2_to;
+    pub fn reflect(v: Direction, no: Normal) -> Direction {
+        2.0 * v.project_onto(no) - v
+    }
 
-    /* total internal reflection */
-    if sin2_ti > 1.0 {
-        reflect(v, no)
-    } else {
-        let cos_ti = (1.0 - sin2_ti).sqrt();
+    pub fn refract(eta_ratio: Float, v: Direction, no: Normal) -> Direction {
+        /* Snell-Descartes law */
+        let cos_to = no.dot(v);
+        let sin2_to = 1.0 - cos_to * cos_to;
+        let sin2_ti = eta_ratio * eta_ratio * sin2_to;
 
-        -v * eta_ratio + (eta_ratio * cos_to - cos_ti) * no
+        /* total internal reflection */
+        if sin2_ti > 1.0 {
+            reflect(v, no)
+        } else {
+            let cos_ti = (1.0 - sin2_ti).sqrt();
+
+            -v * eta_ratio + (eta_ratio * cos_to - cos_ti) * no
+        }
     }
 }
-
 /*
  * MICROFACET DIFFUSE
  * Disney diffuse (Burley 2012) with renormalization to conserve energy
@@ -109,7 +112,7 @@ pub fn transmission_sample(
         1.0 / mfd.eta()
     };
 
-    Some( refract(eta_ratio, v, wh) )
+    Some( util::refract(eta_ratio, v, wh) )
 }
 
 pub fn transmission_pdf(
@@ -188,7 +191,7 @@ pub fn reflection_sample(
 ) -> Option<Direction> {
     let v = -wo;
     let wh = mfd.sample_normal(v, rand_sq).normalize();
-    let wi = reflect(v, wh);
+    let wi = util::reflect(v, wh);
 
     if wi.z <= 0.0 {
         // bad sample, do something else?
