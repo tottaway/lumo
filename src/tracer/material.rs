@@ -134,6 +134,7 @@ impl Material {
         }
     }
 
+    /// Samples leaving direction from `h` from incoming direction `wo`
     pub fn bsdf_sample(
         &self,
         wo: Direction,
@@ -172,6 +173,7 @@ impl Material {
         }
     }
 
+    /// PDF for direction `wi` at `h` with incoming direction `wo`
     pub fn bsdf_pdf(
         &self,
         wo: Direction,

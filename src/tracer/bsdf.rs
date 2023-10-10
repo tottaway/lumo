@@ -2,8 +2,10 @@ use crate::{ Direction, Transport, Float, Vec2 };
 use crate::tracer::{ Color, bxdf::BxDF, onb::Onb, hit::Hit };
 use rand::prelude::SliceRandom;
 
+#[allow(non_upper_case_globals)]
 const MAX_BxDF: usize = 4;
 
+#[allow(non_snake_case)]
 pub struct BSDF {
     BxDFs: [BxDF; MAX_BxDF],
     n: usize,

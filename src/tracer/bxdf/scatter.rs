@@ -14,7 +14,7 @@ pub fn transmission_f(wo: Direction, eta: Float, mode: Transport) -> Color {
     }
 }
 
-pub fn transmission_sample(wo: Direction, eta: Float, rand_sq: Vec2) -> Option<Direction> {
+pub fn transmission_sample(wo: Direction, eta: Float) -> Option<Direction> {
     let v = -wo;
     let cos_to = v.z;
     let inside = cos_to < 0.0;
