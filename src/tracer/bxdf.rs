@@ -30,6 +30,7 @@ impl BxDF {
             Self::MfDiffuse(mfd) => microfacet::diffuse_f(wo, wi, albedo, mfd),
             Self::MfReflection(mfd) => microfacet::reflection_f(wo, wi, mfd, albedo),
             Self::MfTransmission(mfd) => microfacet::transmission_f(wo, wi, mfd, albedo, mode),
+            Self::None => Color::BLACK,
         }
     }
 
@@ -41,6 +42,7 @@ impl BxDF {
             Self::MfDiffuse(_) => Some( rand_utils::square_to_cos_hemisphere(rand_sq) ),
             Self::MfReflection(mfd) => microfacet::reflection_sample(wo, mfd, rand_sq),
             Self::MfTransmission(mfd) => microfacet::transmission_sample(wo, mfd, rand_sq),
+            Self::None => None,
         }
     }
 
@@ -51,6 +53,7 @@ impl BxDF {
             Self::MfDiffuse(_) => scatter::lambertian_pdf(wi),
             Self::MfReflection(mfd) => microfacet::reflection_pdf(wo, wi, mfd),
             Self::MfTransmission(mfd) => microfacet::transmission_pdf(wo, wi, mfd, swap_dir),
+            Self::None => 0.0,
         }
     }
 }
