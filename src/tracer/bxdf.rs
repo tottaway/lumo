@@ -4,6 +4,7 @@ use crate::tracer::{ Color, microfacet::MfDistribution };
 mod microfacet;
 mod scatter;
 
+#[derive(Clone, Copy)]
 pub enum BxDF {
     Lambertian,
     Transmission(Float),
