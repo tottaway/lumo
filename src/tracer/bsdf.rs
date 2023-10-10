@@ -1,41 +1,43 @@
-use crate::{ Direction, Normal, Transport, Float, Vec2 };
-use crate::tracer::{ Color, bxdf::BxDF, onb::Onb };
+use crate::{ Direction, Transport, Float, Vec2 };
+use crate::tracer::{ Color, bxdf::BxDF, onb::Onb, hit::Hit };
 use rand::prelude::SliceRandom;
 
+const MAX_BxDF: usize = 4;
+
 pub struct BSDF {
-    BxDFs: Vec<BxDF>,
-    uvw: Onb,
-    ng: Normal,
+    BxDFs: [BxDF; MAX_BxDF],
+    n: usize,
 }
 
 impl BSDF {
     pub fn new() -> Self {
         Self {
-            BxDFs: vec![],
-            uvw: Onb::new(Normal::Z),
-            ng: Normal::Z,
+            BxDFs: [BxDF::None; MAX_BxDF],
+            n: 0,
         }
     }
 
     pub fn add(mut self, bxdf: BxDF) -> Self {
-        self.BxDFs.push(bxdf);
+        if self.n < MAX_BxDF {
+            self.BxDFs[self.n] = bxdf;
+            self.n += 1;
+        }
         self
-    }
-
-    pub fn update_normals(&mut self, ns: Normal, ng: Normal) {
-        self.uvw = Onb::new(ns);
-        self.ng = ng;
     }
 
     pub fn f(
         &self,
         wo: Direction,
         wi: Direction,
+        h: &Hit,
         albedo: Color,
         mode: Transport
     ) -> Color {
-        let wo_local = self.uvw.to_local(wo);
-        let wi_local = self.uvw.to_local(wi);
+        let ns = h.ns;
+        let uvw = Onb::new(ns);
+
+        let wo_local = uvw.to_local(wo);
+        let wi_local = uvw.to_local(wi);
 
         self.BxDFs.iter()
             .fold(Color::BLACK, |color, bxdf| {
@@ -43,16 +45,33 @@ impl BSDF {
             })
     }
 
-    pub fn sample(&self, wo: Direction, rand_sq: Vec2) -> Option<Direction> {
-        let wo_local = self.uvw.to_local(wo);
+    pub fn sample(
+        &self,
+        wo: Direction,
+        h: &Hit,
+        rand_sq: Vec2
+    ) -> Option<Direction> {
+        let ns = h.ns;
+        let uvw = Onb::new(ns);
+
+        let wo_local = uvw.to_local(wo);
 
         self.BxDFs.choose(&mut rand::thread_rng())
             .and_then(|bxdf| bxdf.sample(wo_local, rand_sq))
     }
 
-    pub fn pdf(&self, wo: Direction, wi: Direction, swap_dir: bool) -> Float {
-        let wo_local = self.uvw.to_local(wo);
-        let wi_local = self.uvw.to_local(wi);
+    pub fn pdf(
+        &self,
+        wo: Direction,
+        wi: Direction,
+        h: &Hit,
+        swap_dir: bool
+    ) -> Float {
+        let ns = h.ns;
+        let uvw = Onb::new(ns);
+
+        let wo_local = uvw.to_local(wo);
+        let wi_local = uvw.to_local(wi);
 
         self.BxDFs.iter()
             .fold(0.0, |prob, bxdf| {

@@ -1,8 +1,7 @@
-use crate::{ Normal, Direction, Transport, Float, Vec3 };
+use crate::{ Normal, Direction, Transport, Float, Vec3, Vec2 };
 use crate::tracer::{
-    Color, hit::Hit, ray::Ray,
-    microfacet::MfDistribution,
-    texture::Texture, bsdf::BSDF, bxdf::BxDF,
+    Color, hit::Hit, microfacet::MfDistribution,
+    texture::Texture, bsdf::BSDF, bxdf::BxDF, onb::Onb
 };
 
 /// Describes which material an object is made out of
@@ -108,11 +107,8 @@ impl Material {
         }
     }
 
-    // instead of this we want get BSDF, that updates normals albedos and such.
-    // and gives REFERENCE to the updated BSDF (RACE CONDITIONS? yes it is a problem)
-    // and how should we handle mediums then....
-    // to avoid race conditions, maybe the BSDF itself should take normals and allbedo as args....
-    /// What is the color at `h`?
+    /// BSDF evaluated at `h` for incoming `wo` and outgoing `wi` while
+    /// transporting `mode`
     pub fn bsdf_f(
         &self,
         wo: Direction,
@@ -120,13 +116,10 @@ impl Material {
         mode: Transport,
         h: &Hit
     ) -> Color {
-        let ns = h.ns;
-        let ng = h.ng;
         match self {
             Self::Standard(bsdf, texture) | Self::Microfacet(bsdf, texture, _) => {
-                bsdf.update_normals(ns, ng);
                 let albedo = texture.albedo_at(h);
-                bsdf.f(wo, wi, albedo, mode)
+                bsdf.f(wo, wi, h, albedo, mode)
             }
             // volumetric BSDF handled in integrator to cancel out PDF
             Self::Volumetric(_, sigma_t, sigma_s) => {
@@ -138,6 +131,68 @@ impl Material {
                 if pdf == 0.0 { Color::WHITE } else { *sigma_s / pdf }
             }
             _ => Color::BLACK,
+        }
+    }
+
+    pub fn bsdf_sample(
+        &self,
+        wo: Direction,
+        h: &Hit,
+        rand_sq: Vec2
+    ) -> Option<Direction> {
+        match self {
+            Self::Standard(bsdf, _) | Self::Microfacet(bsdf, _, _) => {
+                bsdf.sample(wo, h, rand_sq)
+            }
+            /* Henyey-Greenstein (1941) */
+            Self::Volumetric(g, _, _) => {
+                let cos_theta = if g.abs() < 1e-3 {
+                    1.0 - 2.0 * rand_sq.x
+                } else {
+                    let g2 = g * g;
+                    let fract = (1.0 - g2)
+                        / (1.0 - g + 2.0 * g * rand_sq.x);
+                    (1.0 + g2 - fract * fract) / (2.0 * g)
+                };
+                let sin_theta = (1.0 - cos_theta * cos_theta).max(0.0).sqrt();
+
+                let phi = 2.0 * crate::PI * rand_sq.y;
+
+                let v = -wo;
+                let uvw = Onb::new(v);
+                let wi = uvw.to_world(Direction::new(
+                    sin_theta * phi.cos(),
+                    sin_theta * phi.sin(),
+                    cos_theta
+                ));
+
+                Some( wi )
+            }
+            _ => None,
+        }
+    }
+
+    pub fn bsdf_pdf(
+        &self,
+        wo: Direction,
+        wi: Direction,
+        h: &Hit,
+        swap_dir: bool
+    ) -> Float {
+        match self {
+            Self::Standard(bsdf, _) | Self::Microfacet(bsdf, _, _) => {
+                bsdf.pdf(wo, wi, h, swap_dir)
+            }
+            Self::Volumetric(g, _, _) => {
+                let v = -wo;
+                let cos_theta = v.dot(wi);
+
+                let g2 = g * g;
+                let denom = 1.0 + g2 + 2.0 * g * cos_theta;
+
+                (1.0 - g2) / (4.0 * crate::PI * denom * denom.max(0.0).sqrt())
+            }
+            _ => 0.0,
         }
     }
 

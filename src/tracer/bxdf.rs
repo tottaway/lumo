@@ -11,6 +11,7 @@ pub enum BxDF {
     MfDiffuse(MfDistribution),
     MfReflection(MfDistribution),
     MfTransmission(MfDistribution),
+    None,
 }
 
 impl BxDF {
