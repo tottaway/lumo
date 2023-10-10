@@ -83,7 +83,6 @@ pub fn transmission_f(
     let wh_dot_v = wh.dot(v);
     let wh_dot_wi = wh.dot(wi);
 
-
     /* same hemisphere w.r.t. wh */
     if wh_dot_v * wh_dot_wi > 0.0 {
         return Color::BLACK;
@@ -155,6 +154,7 @@ pub fn transmission_pdf(
             /* same hemisphere w.r.t. wh */
             0.0
         } else {
+            let wh = if wh.z < 0.0 { -wh } else { wh };
             mfd.sample_normal_pdf(wh, v)
                 * (eta_ratio * eta_ratio * wh_dot_wi).abs()
                 / (wh_dot_v + eta_ratio * wh_dot_wi).powi(2)

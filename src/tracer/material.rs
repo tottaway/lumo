@@ -50,6 +50,7 @@ impl Material {
     pub fn transparent(texture: Texture, roughness: Float, eta: Float) -> Self {
         let mfd = MfDistribution::new(roughness, eta, 0.0);
         let bsdf = BSDF::new()
+            .add(BxDF::MfReflection(mfd))
             .add(BxDF::MfTransmission(mfd));
         Self::Microfacet(bsdf, texture, mfd)
     }
