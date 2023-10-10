@@ -51,14 +51,16 @@ impl MtlConfig {
             let metallicity = if self.illumination_model == 5 { 1.0 } else { 0.0 };
             let is_transparent = self.illumination_model == 6
                 || self.illumination_model == 7;
-
+            Material::metallic(texture, self.roughness)
+/*
             Material::microfacet(
                 texture,
                 self.roughness,
                 self.refraction_idx,
                 metallicity,
                 is_transparent,
-            )
+        )
+            */
         }
     }
 }
