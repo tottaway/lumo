@@ -51,7 +51,7 @@ impl MfDistribution {
 
     /// might need tuning, send ratio that emittance is multiplied with?
     pub fn is_specular(&self) -> bool {
-        self.is_transparent() || self.get_config().roughness < 0.01
+        self.get_config().roughness < 0.01
     }
 
     /// Does the material have delta scattering distribution?
@@ -60,7 +60,7 @@ impl MfDistribution {
     }
 
     pub fn eta(&self) -> Float {
-        self.get_rfrct_idx()
+        self.get_config().eta
     }
 
     /// Get roughness from config
