@@ -135,18 +135,26 @@ impl MfDistribution {
 
     /// Fresnel term with Schlick's approximation
     /// # Arguments
-    /// * `v`      - Direction to viewer in shadping space
+    /// * `v`      - Direction to viewer in shading space
     /// * `wh`     - Microsurface normal in shading space
     /// * `albedo` - Albedo at the point of impact
     pub fn f(&self, v: Direction, wh: Normal, albedo: Color) -> Color {
         let eta = self.eta();
+        let cos_to = v.dot(wh).abs();
+        let sin2_to = 1.0 - cos_to * cos_to;
+        let sin2_ti = eta * eta * sin2_to;
+
+        // total internal reflection
+        if v.z < 0.0 && sin2_ti > 1.0 {
+            return Color::WHITE;
+        }
+
         let metallicity = self.get_config().metallicity;
 
         let f0 = (eta - 1.0) / (eta + 1.0);
         let f0 = Color::splat(f0 * f0).lerp(albedo, metallicity);
 
-        let v_dot_wh = v.dot(wh).abs();
-        f0 + (Color::WHITE - f0) * (1.0 - v_dot_wh).powi(5)
+        f0 + (Color::WHITE - f0) * (1.0 - cos_to).powi(5)
     }
 
     /// Shadow-masking term. Used to make sure that only microfacets that are

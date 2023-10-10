@@ -24,6 +24,7 @@ mod util {
         }
     }
 }
+
 /*
  * MICROFACET DIFFUSE
  * Disney diffuse (Burley 2012) with renormalization to conserve energy
@@ -125,20 +126,9 @@ pub fn transmission_pdf(
     let v_inside = v.z < 0.0;
     let wi_inside = wi.z < 0.0;
 
-
     if v_inside == wi_inside {
-        /* same hemisphere. check total internal reflection. */
-        let wh = (v + wi).normalize();
-        let wh_dot_v = wh.dot(v);
-        let sin2_to = 1.0 - wh_dot_v * wh_dot_v;
-        let sin2_ti = sin2_to * mfd.eta().powi(2);
-
-        if sin2_ti > 1.0 {
-            mfd.sample_normal_pdf(wh, v) / (4.0 * wh_dot_v)
-        } else {
-            /* not total internal reflection... */
-            0.0
-        }
+        /* same hemisphere */
+        0.0
     } else {
         let eta_ratio = if v_inside {
             1.0 / mfd.eta()
@@ -173,8 +163,8 @@ pub fn reflection_f(
     albedo: Color,
 ) -> Color {
     let v = -wo;
-    let cos_theta_v = v.z;
-    let cos_theta_wi = wi.z;
+    let cos_theta_v = v.z.abs();
+    let cos_theta_wi = wi.z.abs();
     let wh = (wi + v).normalize();
 
     let d = mfd.d(wh);
