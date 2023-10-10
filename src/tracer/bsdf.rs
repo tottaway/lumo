@@ -12,6 +12,7 @@ pub struct BSDF {
 }
 
 impl BSDF {
+    /// Construct new empty BSDF
     pub fn new() -> Self {
         Self {
             BxDFs: [BxDF::None; MAX_BxDF],
@@ -19,6 +20,7 @@ impl BSDF {
         }
     }
 
+    /// Add `bxdf` to `self` (given we have less than `MAX_BxDF` BxDFs)
     pub fn add(mut self, bxdf: BxDF) -> Self {
         if self.n < MAX_BxDF {
             self.BxDFs[self.n] = bxdf;
@@ -27,6 +29,12 @@ impl BSDF {
         self
     }
 
+    pub fn is_specular(&self) -> bool {
+        self.BxDFs.iter()
+            .any(|bxdf| bxdf.is_specular())
+    }
+
+    /// Evaluate the BSDF
     pub fn f(
         &self,
         wo: Direction,
@@ -47,6 +55,7 @@ impl BSDF {
             })
     }
 
+    /// Sample direction from a random BxDF
     pub fn sample(
         &self,
         wo: Direction,
@@ -62,6 +71,7 @@ impl BSDF {
             .and_then(|bxdf| bxdf.sample(wo_local, rand_sq))
     }
 
+    /// PDF for the BSDF
     pub fn pdf(
         &self,
         wo: Direction,

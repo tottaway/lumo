@@ -71,14 +71,11 @@ impl Material {
 
     /// Is the material specular? I.e. reflects light
     pub fn is_specular(&self) -> bool {
-        false
-        /*
         match self {
-            Self::Mirror | Self::Glass(..) => true,
-            Self::Microfacet(_, mfd) => mfd.is_specular(),
+            Self::Volumetric(..) => true,
+            Self::Microfacet(bsdf, _, _) | Self::Standard(bsdf, _) => bsdf.is_specular(),
             _ => false,
-    }
-         */
+        }
     }
 
     /// Does the material scattering follow delta distribution?

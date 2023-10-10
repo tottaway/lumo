@@ -16,6 +16,14 @@ pub enum BxDF {
 }
 
 impl BxDF {
+    pub fn is_specular(&self) -> bool {
+        match self {
+            Self::Reflection | Self::Transmission(_) | Self::MfTransmission(_) => true,
+            Self::MfReflection(mfd) => mfd.is_specular(),
+            _ => false,
+        }
+    }
+
     pub fn f(
         &self,
         wo: Direction,
