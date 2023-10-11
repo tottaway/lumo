@@ -138,24 +138,46 @@ impl MfDistribution {
     /// * `v`      - Direction to viewer in shading space
     /// * `wh`     - Microsurface normal in shading space
     /// * `albedo` - Albedo at the point of impact
-    pub fn f(&self, v: Direction, wh: Normal, albedo: Color) -> Color {
+    pub fn f_reflection(&self, v: Direction, wh: Normal) -> Float {
+        let cos_v = v.dot(wh).abs();
+        let cos2_v = cos_v * cos_v;
         let eta = self.eta();
-        let cos_to = v.dot(wh).abs();
-        let sin2_to = 1.0 - cos_to * cos_to;
-        let sin2_ti = eta * eta * sin2_to;
+        let eta2 = eta * eta;
+
+        let r_par = (eta2 * cos2_v - 2.0 * eta * cos_v + 1.0)
+                  / (eta2 * cos2_v + 2.0 * eta * cos_v + 1.0);
+        let r_per = (eta2 + cos2_v - 2.0 * eta * cos_v)
+                  / (eta2 + cos2_v + 2.0 * eta * cos_v);
+
+        0.5 * (r_par + r_per)
+    }
+
+    pub fn f_transmission(&self, v: Direction, wh: Normal) -> Float {
+        let cos_o = v.dot(wh);
+        let (eta_o, eta_i) = if cos_o < 0.0 {
+            (1.0, self.eta())
+        } else {
+            (self.eta(), 1.0)
+        };
+        let cos_o = cos_o.abs();
+        let sin_o = (1.0 - cos_o * cos_o).max(0.0).sqrt();
+        let sin_i = eta_o / eta_i * sin_o;
 
         // total internal reflection
-        if v.z < 0.0 && sin2_ti > 1.0 {
-            return Color::WHITE;
+        if sin_i >= 1.0 {
+            return 1.0;
         }
 
-        let metallicity = self.get_config().metallicity;
+        let cos_i = (1.0 - sin_i * sin_i).max(0.0).sqrt();
 
-        let f0 = (eta - 1.0) / (eta + 1.0);
-        let f0 = Color::splat(f0 * f0).lerp(albedo, metallicity);
+        let r_par = ( (eta_i * cos_o) - (eta_o * cos_i) )
+                  / ( (eta_i * cos_o) + (eta_o * cos_i) );
+        let r_per = ( (eta_o * cos_o) - (eta_i * cos_i) )
+                  / ( (eta_o * cos_o) + (eta_i * cos_i) );
 
-        f0 + (Color::WHITE - f0) * (1.0 - cos_to).powi(5)
+        0.5 * (r_par * r_par + r_per * r_per)
     }
+
 
     /// Shadow-masking term. Used to make sure that only microfacets that are
     /// visible from `v` direction are considered. Uses the method described
