@@ -138,18 +138,15 @@ impl MfDistribution {
     /// * `v`      - Direction to viewer in shading space
     /// * `wh`     - Microsurface normal in shading space
     /// * `albedo` - Albedo at the point of impact
-    pub fn f_reflection(&self, v: Direction, wh: Normal) -> Float {
-        let cos_v = v.dot(wh).abs();
-        let cos2_v = cos_v * cos_v;
+    pub fn f_reflection(&self, v: Direction, wh: Normal, albedo: Color) -> Color {
         let eta = self.eta();
-        let eta2 = eta * eta;
+        let metallicity = self.get_config().metallicity;
 
-        let r_par = (eta2 * cos2_v - 2.0 * eta * cos_v + 1.0)
-                  / (eta2 * cos2_v + 2.0 * eta * cos_v + 1.0);
-        let r_per = (eta2 + cos2_v - 2.0 * eta * cos_v)
-                  / (eta2 + cos2_v + 2.0 * eta * cos_v);
+        let f0 = (eta - 1.0) / (eta + 1.0);
+        let f0 = Color::splat(f0 * f0).lerp(albedo, metallicity);
 
-        0.5 * (r_par + r_per)
+        let cos_v = v.dot(wh).abs();
+        f0 + (Color::WHITE - f0) * (1.0 - cos_v).powi(5)
     }
 
     pub fn f_transmission(&self, v: Direction, wh: Normal) -> Float {

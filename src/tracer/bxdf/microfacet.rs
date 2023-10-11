@@ -43,7 +43,7 @@ pub fn diffuse_f(
     let cos_theta_v = v.z;
     let cos_theta_wi = wi.z;
     let cos_theta_wh = wh.z;
-    let f = mfd.f_reflection(v, wh);
+    let f = mfd.f_reflection(v, wh, albedo);
     let disney = mfd.disney_diffuse(cos_theta_v, cos_theta_wi, cos_theta_wh);
 
     (Color::WHITE - f) * albedo * disney / crate::PI
@@ -168,10 +168,10 @@ pub fn reflection_f(
     let wh = (wi + v).normalize();
 
     let d = mfd.d(wh);
-    let f = mfd.f_reflection(v, wh);
+    let f = mfd.f_reflection(v, wh, albedo);
     let g = mfd.g(v, wi, wh);
 
-    Color::WHITE * d * f * g / (4.0 * cos_theta_v * cos_theta_wi)
+    d * f * g / (4.0 * cos_theta_v * cos_theta_wi)
 }
 
 pub fn reflection_sample(
