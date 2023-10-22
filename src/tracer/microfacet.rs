@@ -140,21 +140,31 @@ impl MfDistribution {
     /// * `albedo` - Albedo at the point of impact
     pub fn f_reflection(&self, v: Direction, wh: Normal, albedo: Color) -> Color {
         let eta = self.eta();
+        let cos_v = v.dot(wh).abs();
+
+        let sin2_to = 1.0 - cos_v * cos_v;
+        let sin2_ti = sin2_to * eta * eta;
+
+        if sin2_ti >= 1.0 && v.z < 0.0 && false {
+            // total internal reflection
+            return Color::WHITE;
+        }
+
         let metallicity = self.get_config().metallicity;
 
         let f0 = (eta - 1.0) / (eta + 1.0);
         let f0 = Color::splat(f0 * f0).lerp(albedo, metallicity);
 
-        let cos_v = v.dot(wh).abs();
         f0 + (Color::WHITE - f0) * (1.0 - cos_v).powi(5)
     }
 
     pub fn f_transmission(&self, v: Direction, wh: Normal) -> Float {
         let cos_o = v.dot(wh);
-        let (eta_o, eta_i) = if cos_o < 0.0 {
-            (1.0, self.eta())
-        } else {
+        let inside = cos_o < 0.0;
+        let (eta_o, eta_i) = if inside {
             (self.eta(), 1.0)
+        } else {
+            (1.0, self.eta())
         };
         let cos_o = cos_o.abs();
         let sin_o = (1.0 - cos_o * cos_o).max(0.0).sqrt();
