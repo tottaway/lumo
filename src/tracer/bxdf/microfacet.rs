@@ -8,19 +8,19 @@ mod util {
         2.0 * v.project_onto(no) - v
     }
 
-    pub fn refract(eta_ratio: Float, v: Direction, no: Normal) -> Direction {
+    pub fn refract(eta_ratio: Float, v: Direction, no: Normal) -> Option<Direction> {
         /* Snell-Descartes law */
         let cos_to = no.dot(v);
         let sin2_to = 1.0 - cos_to * cos_to;
         let sin2_ti = eta_ratio * eta_ratio * sin2_to;
 
-        /* total internal reflection */
-        if sin2_ti > 1.0 {
-            reflect(v, no)
+        if sin2_ti >= 1.0 {
+            /* total internal reflection */
+            // we don't do it?
+            None
         } else {
             let cos_ti = (1.0 - sin2_ti).sqrt();
-
-            -v * eta_ratio + (eta_ratio * cos_to - cos_ti) * no
+            Some( -v * eta_ratio + (eta_ratio * cos_to - cos_ti) * no )
         }
     }
 }
@@ -112,7 +112,7 @@ pub fn transmission_sample(
         1.0 / mfd.eta()
     };
 
-    Some( util::refract(eta_ratio, v, wh) )
+    util::refract(eta_ratio, v, wh)
 }
 
 pub fn transmission_pdf(
