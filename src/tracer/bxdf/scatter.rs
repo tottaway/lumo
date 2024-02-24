@@ -17,19 +17,21 @@ pub fn transmission_f(wo: Direction, eta: Float, mode: Transport) -> Color {
 pub fn transmission_sample(wo: Direction, eta: Float) -> Option<Direction> {
     let v = -wo;
     let cos_to = v.z;
+    let cos_to_abs = cos_to.abs();
     let inside = cos_to < 0.0;
     let eta_ratio = if inside { eta } else { 1.0 / eta };
 
     let sin2_to = 1.0 - cos_to * cos_to;
     let sin2_ti = eta_ratio * eta_ratio * sin2_to;
 
-    if sin2_ti > 1.0 {
+    if sin2_ti >= 1.0 {
         /* total internal reflection */
-        Some( Direction::new(wo.x, wo.y, -wo.z) )
+        // we don't handle it?
+        None
     } else {
         let cos_ti = (1.0 - sin2_ti).sqrt();
         let n = if inside { Normal::NEG_Z } else { Normal::Z };
-        Some( -v * eta_ratio + (eta_ratio * cos_to - cos_ti) * n )
+        Some( -v * eta_ratio + (eta_ratio * cos_to_abs - cos_ti) * n )
     }
 }
 
