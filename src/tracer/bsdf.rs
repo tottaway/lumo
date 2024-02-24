@@ -7,24 +7,21 @@ const MAX_BxDF: usize = 4;
 
 #[allow(non_snake_case)]
 pub struct BSDF {
-    BxDFs: [BxDF; MAX_BxDF],
-    n: usize,
+    BxDFs: Vec<BxDF>,
 }
 
 impl BSDF {
     /// Construct new empty BSDF
     pub fn new() -> Self {
         Self {
-            BxDFs: [BxDF::None; MAX_BxDF],
-            n: 0,
+            BxDFs: vec!(),
         }
     }
 
     /// Add `bxdf` to `self` (given we have less than `MAX_BxDF` BxDFs)
     pub fn add(mut self, bxdf: BxDF) -> Self {
-        if self.n < MAX_BxDF {
-            self.BxDFs[self.n] = bxdf;
-            self.n += 1;
+        if self.BxDFs.len() < MAX_BxDF {
+            self.BxDFs.push(bxdf);
         }
         self
     }
