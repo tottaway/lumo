@@ -11,6 +11,7 @@ mod util {
     pub fn refract(eta_ratio: Float, v: Direction, no: Normal) -> Option<Direction> {
         /* Snell-Descartes law */
         let cos_to = no.dot(v);
+        let cos_to_abs = cos_to.abs();
         let sin2_to = 1.0 - cos_to * cos_to;
         let sin2_ti = eta_ratio * eta_ratio * sin2_to;
 
@@ -20,7 +21,8 @@ mod util {
             None
         } else {
             let cos_ti = (1.0 - sin2_ti).sqrt();
-            Some( -v * eta_ratio + (eta_ratio * cos_to - cos_ti) * no )
+            let n = if v.z < 0.0 { -no } else { no };
+            Some( -v * eta_ratio + (eta_ratio * cos_to_abs - cos_ti) * n )
         }
     }
 }
@@ -104,8 +106,15 @@ pub fn transmission_sample(
     rand_sq: Vec2
 ) -> Option<Direction> {
     let v = -wo;
-    let wh = mfd.sample_normal(v, rand_sq).normalize();
     let inside = v.z < 0.0;
+    // v needs to be "outside" for normal sampling
+    let wh = if inside {
+        mfd.sample_normal(-v, rand_sq).normalize()
+    } else {
+        mfd.sample_normal(v, rand_sq).normalize()
+    };
+
+
     let eta_ratio = if inside {
         mfd.eta()
     } else {
