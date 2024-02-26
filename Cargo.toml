@@ -32,6 +32,7 @@ debug = true
 argh = "0.1.10"
 glam = "0.23.0"
 itertools = "0.10.5"
+num = "0.4.1"
 png = "0.17.7"
 rand = "0.8.5"
 rayon = "1.7.0"

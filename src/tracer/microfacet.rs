@@ -1,5 +1,6 @@
 use crate::tracer::{ onb::Onb, Color };
 use crate::{ Normal, Direction, Float, Vec2 };
+use num::complex::Complex;
 
 /// Configurable parameters for a microsurface
 #[derive(Copy, Clone)]
@@ -59,8 +60,14 @@ impl MfDistribution {
         self.get_config().roughness < 1e-2
     }
 
+    /// Get refraction index from config
     pub fn eta(&self) -> Float {
         self.get_config().eta
+    }
+
+    /// Get absorption coefficient from config
+    pub fn k(&self) -> Float {
+        self.get_config().metallicity
     }
 
     /// Get roughness from config
@@ -133,32 +140,35 @@ impl MfDistribution {
         }
     }
 
-    /// Fresnel term with Schlick's approximation
+    /// Fresnel term with the full equations
     /// # Arguments
     /// * `v`      - Direction to viewer in shading space
     /// * `wh`     - Microsurface normal in shading space
-    /// * `albedo` - Albedo at the point of impact
-    pub fn f_reflection(&self, v: Direction, wh: Normal, albedo: Color) -> Color {
-        let eta = self.eta();
-        let cos_v = v.dot(wh).abs();
-
-        let sin2_to = 1.0 - cos_v * cos_v;
-        let sin2_ti = sin2_to * eta * eta;
-
-        if sin2_ti >= 1.0 && v.z < 0.0 && false {
-            // total internal reflection
-            return Color::WHITE;
+    pub fn fresnel(&self, v: Direction, wh: Normal) -> Float {
+        // use simpler form of fresnel equations for dielectrics
+        if self.k() == 0.0 {
+            self.fr_transmission(v, wh)
+        } else {
+            self.fr_complex(v, wh)
         }
-
-        let metallicity = self.get_config().metallicity;
-
-        let f0 = (eta - 1.0) / (eta + 1.0);
-        let f0 = Color::splat(f0 * f0).lerp(albedo, metallicity);
-
-        f0 + (Color::WHITE - f0) * (1.0 - cos_v).powi(5)
     }
 
-    pub fn f_transmission(&self, v: Direction, wh: Normal) -> Float {
+    fn fr_complex(&self, v: Direction, wh: Normal) -> Float {
+        // this is a complex number: n + ik
+        let eta = Complex::new(self.eta(), self.k());
+        let cos_o = v.dot(wh).clamp(0.0, 1.0);
+        let sin2_o = 1.0 - cos_o * cos_o;
+
+        let sin2_i: Complex<Float> = sin2_o / (eta * eta);
+        let cos_i: Complex<Float> = (1.0 - sin2_i).sqrt();
+
+        let r_par: Complex<Float> = (eta * cos_o - cos_i) / (eta * cos_o + cos_i);
+        let r_per: Complex<Float> = (cos_o - eta * cos_i) / (cos_o + eta * cos_i);
+
+        (r_par.norm() + r_per.norm()) / 2.0
+    }
+
+    fn fr_transmission(&self, v: Direction, wh: Normal) -> Float {
         let cos_o = v.dot(wh);
         let inside = cos_o < 0.0;
         let (eta_o, eta_i) = if inside {

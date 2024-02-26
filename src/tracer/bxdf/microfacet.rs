@@ -45,10 +45,10 @@ pub fn diffuse_f(
     let cos_theta_v = v.z;
     let cos_theta_wi = wi.z;
     let cos_theta_wh = wh.z;
-    let f = mfd.f_reflection(v, wh, albedo);
+    let f = mfd.fresnel(v, wh);
     let disney = mfd.disney_diffuse(cos_theta_v, cos_theta_wi, cos_theta_wh);
 
-    (Color::WHITE - f) * albedo * disney / crate::PI
+    (1.0 - f) * albedo * disney / crate::PI
 }
 
 /*
@@ -92,7 +92,7 @@ pub fn transmission_f(
     }
 
     let d = mfd.d(wh);
-    let f = mfd.f_transmission(v, wh);
+    let f = mfd.fresnel(v, wh);
     let g = mfd.g(v, wi, wh);
 
     scale * albedo * d * (1.0 - f) * g
@@ -177,10 +177,11 @@ pub fn reflection_f(
     let wh = (wi + v).normalize();
 
     let d = mfd.d(wh);
-    let f = mfd.f_reflection(v, wh, albedo);
+    let f = mfd.fresnel(v, wh);
     let g = mfd.g(v, wi, wh);
 
-    d * f * g / (4.0 * cos_theta_v * cos_theta_wi)
+    // need reflection color, its in the .mtl files somewhere
+    Color::WHITE * d * f * g / (4.0 * cos_theta_v * cos_theta_wi)
 }
 
 pub fn reflection_sample(
