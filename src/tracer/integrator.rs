@@ -11,27 +11,27 @@ use std::fmt;
 
 //mod bd_path_trace;
 mod direct_light;
-//mod path_trace;
+mod path_trace;
 
 /// Enum to choose which integrator to use
 pub enum Integrator {
-    //// Implements the path tracing algorithm with
-    //// Russian Roulette (With probability `p` terminate each path.
-    //// Multiply contributions by reciprocal of `1-p`) and
-    //// next event estimation (Importance sample light at each impact).
-    //  PathTrace,
-    //// Naive integrator that importance samples light once.
+    /// Implements the path tracing algorithm with
+    /// Russian Roulette (With probability `p` terminate each path.
+    /// Multiply contributions by reciprocal of `1-p`) and
+    /// next event estimation (Importance sample light at each impact).
+    PathTrace,
+    /// Naive integrator that importance samples light once.
     DirectLight,
     //// Bidirectional path tracing.
-    //  BDPathTrace,
+    //BDPathTrace,
 }
 
 impl fmt::Display for Integrator {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            //     Self::PathTrace => write!(f, "path tracing"),
+            Self::PathTrace => write!(f, "path tracing"),
             Self::DirectLight => write!(f, "direct light integration"),
-            //    Self::BDPathTrace => write!(f, "bidirectional path tracing"),
+            //Self::BDPathTrace => write!(f, "bidirectional path tracing"),
         }
     }
 }
@@ -40,9 +40,9 @@ impl Integrator {
     /// Calls the corresponding integration function
     pub fn integrate(&self, s: &Scene, c: &Camera, raster_xy: Vec2, r: Ray) -> Vec<FilmSample> {
         match self {
-            //            Self::PathTrace => vec![path_trace::integrate(s, r, raster_xy)],
+            Self::PathTrace => vec![path_trace::integrate(s, r, raster_xy)],
             Self::DirectLight => vec![direct_light::integrate(s, r, raster_xy)],
-            //            Self::BDPathTrace => bd_path_trace::integrate(s, c, r, raster_xy),
+            //Self::BDPathTrace => bd_path_trace::integrate(s, c, r, raster_xy),
         }
     }
 }

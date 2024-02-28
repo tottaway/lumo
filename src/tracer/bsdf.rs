@@ -31,6 +31,11 @@ impl BSDF {
             .any(|bxdf| bxdf.is_specular())
     }
 
+    pub fn is_delta(&self) -> bool {
+        self.BxDFs.iter()
+            .any(|bxdf| bxdf.is_delta())
+    }
+
     /// Evaluate the BSDF
     pub fn f(
         &self,

@@ -24,6 +24,14 @@ impl BxDF {
         }
     }
 
+    pub fn is_delta(&self) -> bool {
+        match self {
+            Self::Reflection | Self::Transmission(_) => true,
+            Self::MfReflection(mfd) | Self::MfTransmission(mfd) => mfd.is_delta(),
+            _ => false,
+        }
+    }
+
     pub fn f(
         &self,
         wo: Direction,

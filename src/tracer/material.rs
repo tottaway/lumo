@@ -82,14 +82,10 @@ impl Material {
     /// Does the material scattering follow delta distribution?
     /// Dumb hack to make delta things not have shadows in path trace.
     pub fn is_delta(&self) -> bool {
-        false
-        /*
         match self {
-            Self::Lambertian(_) => false,
-            Self::Microfacet(_, mfd) => mfd.is_delta(),
-            _ => true,
-    }
-         */
+            Self::Microfacet(bsdf, _, _) | Self::Standard(bsdf, _) => bsdf.is_delta(),
+            _ => false,
+        }
     }
 
 

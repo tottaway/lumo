@@ -33,15 +33,12 @@ impl TracerCli {
 
     /// Get the configured integrator.
     pub fn get_integrator(&self) -> Integrator {
-        Integrator::DirectLight
-        /*
         if self.direct_light {
             Integrator::DirectLight
-        } else if self.bd_path_trace {
-            Integrator::BDPathTrace
+//        } else if self.bd_path_trace {
+//            Integrator::BDPathTrace
         } else {
             Integrator::PathTrace
-    }
-        */
+        }
     }
 }
