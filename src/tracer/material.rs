@@ -195,8 +195,8 @@ impl Material {
     /// Computes the shading cosine coefficient per material
     pub fn shading_cosine(&self, wi: Direction, ns: Normal) -> Float {
         match self {
-            //Self::Microfacet(..) | Self::Lambertian(_) => ns.dot(wi).abs(),
-            _ => ns.dot(wi).abs()
+            Self::Microfacet(..) => ns.dot(wi).abs(),
+            _ => 1.0,
         }
     }
 }
