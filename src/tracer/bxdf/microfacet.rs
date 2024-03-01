@@ -59,7 +59,6 @@ pub fn transmission_f(
     wo: Direction,
     wi: Direction,
     mfd: &MfDistribution,
-    albedo: Color,
     mode: Transport,
 ) -> Color {
     let v = -wo;
