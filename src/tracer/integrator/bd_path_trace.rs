@@ -6,6 +6,7 @@ use crate::tracer::material::Material;
  * (2) store directions in vertex?
  */
 use vertex::Vertex;
+use pdf::ObjectPdf;
 
 /// Vertex abstraction
 mod vertex;
@@ -13,6 +14,8 @@ mod vertex;
 mod path_gen;
 /// Multiple improtance sampling weights
 mod mis;
+/// Helpers to sample objects
+mod pdf;
 
 pub fn integrate(scene: &Scene, camera: &Camera, r: Ray, raster_xy: Vec2) -> Vec<FilmSample> {
     let light_path = path_gen::light_path(scene);

@@ -9,7 +9,7 @@ use crate::tracer::{
 };
 use std::fmt;
 
-//mod bd_path_trace;
+mod bd_path_trace;
 mod direct_light;
 mod path_trace;
 
@@ -22,8 +22,8 @@ pub enum Integrator {
     PathTrace,
     /// Naive integrator that importance samples light once.
     DirectLight,
-    //// Bidirectional path tracing.
-    //BDPathTrace,
+    /// Bidirectional path tracing.
+    BDPathTrace,
 }
 
 impl fmt::Display for Integrator {
@@ -31,7 +31,7 @@ impl fmt::Display for Integrator {
         match self {
             Self::PathTrace => write!(f, "path tracing"),
             Self::DirectLight => write!(f, "direct light integration"),
-            //Self::BDPathTrace => write!(f, "bidirectional path tracing"),
+            Self::BDPathTrace => write!(f, "bidirectional path tracing"),
         }
     }
 }
@@ -42,7 +42,7 @@ impl Integrator {
         match self {
             Self::PathTrace => vec![path_trace::integrate(s, r, raster_xy)],
             Self::DirectLight => vec![direct_light::integrate(s, r, raster_xy)],
-            //Self::BDPathTrace => bd_path_trace::integrate(s, c, r, raster_xy),
+            Self::BDPathTrace => bd_path_trace::integrate(s, c, r, raster_xy),
         }
     }
 }

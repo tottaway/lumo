@@ -152,7 +152,6 @@ impl<'a> Vertex<'a> {
         let xi = ho.p;
         // prev -> curr
         let wo = xi - xo;
-        let ro = Ray::new(xo, wo);
         // next
         let xii = next.h.p;
         // curr -> next
@@ -160,10 +159,8 @@ impl<'a> Vertex<'a> {
         let ri = Ray::new(xi, wi);
         // normalized
         let wi = ri.dir;
-        let angle_pdf = match self.material().bsdf_pdf(ho, &ro) {
-            None => 0.0,
-            Some(pdf) => pdf.value_for(&ri, matches!(mode, Transport::Importance))
-        };
+        let angle_pdf = self.material()
+            .bsdf_pdf(wo, wi, &ho, matches!(mode, Transport::Importance));
         let ng = next.h.ng;
 
         // convert solid angle to area at next

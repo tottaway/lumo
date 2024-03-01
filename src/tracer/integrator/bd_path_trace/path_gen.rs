@@ -56,7 +56,8 @@ fn walk<'a>(
             &vertices[prev],
         ));
         let ho = &vertices[curr].h;
-        match material.bsdf_pdf(ho, &ro) {
+        let wo = ro.dir;
+        match material.bsdf_sample(wo, &ho, rand_utils::unit_square()) {
             None => {
                 // we hit a light. if tracing from a light, discard latest vertex
                 if matches!(mode, Transport::Importance) {
@@ -64,76 +65,71 @@ fn walk<'a>(
                 }
                 break;
             }
-            Some(scatter_pdf) => {
-                match scatter_pdf.sample_direction(rand_utils::unit_square()) {
-                    None => break,
-                    Some(wi) => {
-                        let xo = ho.p;
-                        let wo = ro.dir;
-                        let ng = ho.ng;
+            Some(wi) => {
+                let xo = ho.p;
+                let wo = ro.dir;
+                let ng = ho.ng;
 
-                        let ns = ho.ns;
-                        let ri = ho.generate_ray(wi);
-                        // normalized
-                        let wi = ri.dir;
+                let ns = ho.ns;
+                let ri = ho.generate_ray(wi);
+                // normalized
+                let wi = ri.dir;
 
-                        pdf_fwd = scatter_pdf.value_for(&ri, false);
+                pdf_fwd = material.bsdf_pdf(wo, wi, &ho, false);
 
-                        if pdf_fwd <= 0.0 {
-                            break;
-                        }
-
-                        let shading_cosine = match mode {
-                            Transport::Radiance => material.shading_cosine(wi, ns),
-                            Transport::Importance => {
-                                if ho.is_medium() {
-                                    1.0
-                                } else {
-                                    let xp = vertices[prev].h.p;
-                                    let v = (xp - xo).normalize();
-                                    wi.dot(ng).abs()
-                                        * material.shading_cosine(v, ns)
-                                        / v.dot(ng).abs()
-                                }
-                            }
-                        };
-
-                        let bsdf = material.bsdf_f(wo, wi, mode, ho);
-                        let bsdf = if ho.is_medium() {
-                            bsdf * pdf_fwd
-                        } else {
-                            bsdf
-                        };
-
-                        gathered *= bsdf * shading_cosine / pdf_fwd;
-
-                        vertices[prev].pdf_bck = if material.is_delta() || !vertices[prev].is_surface() {
-                            0.0
-                        } else {
-                            let pdf_bck = scatter_pdf.value_for(&ri, true);
-                            vertices[curr].solid_angle_to_area(pdf_bck, &vertices[prev])
-                        };
-
-                        if material.is_delta() {
-                            pdf_fwd = 0.0;
-                        }
-
-                        // russian roulette
-                        if depth > 3 {
-                            let luminance = gathered.luminance();
-                            let rr_prob = (1.0 - luminance).max(0.05);
-                            if rand_utils::rand_float() < rr_prob {
-                                break;
-                            }
-
-                            // TODO (9)
-                            //gathered /= 1.0 - rr_prob;
-                        }
-
-                        depth += 1;
-                        ro = ri;
-                    }
+                if pdf_fwd <= 0.0 {
+                    break;
                 }
+
+                let shading_cosine = match mode {
+                    Transport::Radiance => material.shading_cosine(wi, ns),
+                    Transport::Importance => {
+                        if ho.is_medium() {
+                            1.0
+                        } else {
+                            let xp = vertices[prev].h.p;
+                            let v = (xp - xo).normalize();
+                            wi.dot(ng).abs()
+                                * material.shading_cosine(v, ns)
+                                / v.dot(ng).abs()
+                        }
+                    }
+                };
+
+                let bsdf = material.bsdf_f(wo, wi, mode, &ho);
+                let bsdf = if ho.is_medium() {
+                    bsdf * pdf_fwd
+                } else {
+                    bsdf
+                };
+
+                gathered *= bsdf * shading_cosine / pdf_fwd;
+
+                vertices[prev].pdf_bck = if material.is_delta() || !vertices[prev].is_surface() {
+                    0.0
+                } else {
+                    let pdf_bck = material.bsdf_pdf(wo, wi, &ho, true);
+                    vertices[curr].solid_angle_to_area(pdf_bck, &vertices[prev])
+                };
+
+                if material.is_delta() {
+                    pdf_fwd = 0.0;
+                }
+
+                // russian roulette
+                if depth > 3 {
+                    let luminance = gathered.luminance();
+                    let rr_prob = (1.0 - luminance).max(0.05);
+                    if rand_utils::rand_float() < rr_prob {
+                        break;
+                    }
+
+                    // TODO (9)
+                    //gathered /= 1.0 - rr_prob;
+                }
+
+                depth += 1;
+                ro = ri;
             }
         }
     }
