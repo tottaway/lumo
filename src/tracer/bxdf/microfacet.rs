@@ -59,6 +59,7 @@ pub fn transmission_f(
     wo: Direction,
     wi: Direction,
     mfd: &MfDistribution,
+    albedo: Color,
     mode: Transport,
 ) -> Color {
     let v = -wo;
@@ -180,7 +181,7 @@ pub fn reflection_f(
     let g = mfd.g(v, wi, wh);
 
     // need reflection color, its in the .mtl files somewhere
-    Color::WHITE * d * f * g / (4.0 * cos_theta_v * cos_theta_wi)
+    albedo * d * f * g / (4.0 * cos_theta_v * cos_theta_wi)
 }
 
 pub fn reflection_sample(
