@@ -1,4 +1,4 @@
-use crate::tracer::{ onb::Onb, Color };
+use crate::tracer::onb::Onb;
 use crate::{ Normal, Direction, Float, Vec2 };
 use num::complex::Complex;
 
@@ -9,24 +9,28 @@ pub struct MicrofacetConfig {
     pub roughness: Float,
     /// Refraction index of the material >= 1.0
     pub eta: Float,
-    /// Ratio of how metallic the material is [0,1]
-    pub metallicity: Float,
+    /// Absoprtion coefficient
+    pub k: Float,
+    /// Is fresnel term enabled
+    pub fresnel_enabled: bool,
 }
 
 impl MicrofacetConfig {
     pub fn new(
         roughness: Float,
         eta: Float,
-        metallicity: Float,
+        k: Float,
+        fresnel_enabled: bool,
     ) -> Self {
         assert!((0.0..=1.0).contains(&roughness));
-        assert!((0.0..=1.0).contains(&metallicity));
+        //assert!((0.0..=1.0).contains(&metallicity));
         assert!(eta >= 1.0);
 
         Self {
             roughness: roughness.max(1e-5),
             eta,
-            metallicity,
+            k,
+            fresnel_enabled,
         }
     }
 }
@@ -47,7 +51,7 @@ impl MfDistribution {
         eta: Float,
         metallicity: Float,
     ) -> Self {
-        Self::Ggx(MicrofacetConfig::new(roughness, eta, metallicity))
+        Self::Ggx(MicrofacetConfig::new(roughness, eta, metallicity, true))
     }
 
     /// might need tuning, send ratio that emittance is multiplied with?
@@ -67,12 +71,16 @@ impl MfDistribution {
 
     /// Get absorption coefficient from config
     pub fn k(&self) -> Float {
-        self.get_config().metallicity
+        self.get_config().k
     }
 
     /// Get roughness from config
     pub fn roughness(&self) -> Float {
         self.get_config().roughness
+    }
+
+    pub fn fresnel_enabled(&self) -> bool {
+        self.get_config().fresnel_enabled
     }
 
     /// Getter, better way to do this?
@@ -145,6 +153,9 @@ impl MfDistribution {
     /// * `v`      - Direction to viewer in shading space
     /// * `wh`     - Microsurface normal in shading space
     pub fn fresnel(&self, v: Direction, wh: Normal) -> Float {
+        if !self.fresnel_enabled() {
+            return -1.0;
+        }
         // use simpler form of fresnel equations for dielectrics
         if self.k() == 0.0 {
             self.fr_transmission(v, wh)
@@ -263,17 +274,6 @@ impl MfDistribution {
                 }
             }
         }
-    }
-
-    /// Probability to do importance sampling from NDF. Estimate based on
-    /// the Fresnel term.
-    pub fn probability_ndf_sample(&self, albedo: Color) -> Float {
-        let cfg = self.get_config();
-
-        let f0 = (cfg.eta - 1.0) / (cfg.eta + 1.0);
-        let f0 = f0 * f0;
-
-        (1.0 - cfg.metallicity) * f0 + cfg.metallicity * albedo.mean()
     }
 
     /// Probability that `wh` got sampled. `wh` and `v` in shading space.
