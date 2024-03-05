@@ -153,7 +153,7 @@ impl MfDistribution {
     /// # Arguments
     /// * `v`      - Direction to viewer in shading space
     /// * `wh`     - Microsurface normal in shading space
-    pub fn fresnel(&self, v: Direction, wh: Normal) -> Float {
+    pub fn f(&self, v: Direction, wh: Normal) -> Float {
         if !self.fresnel_enabled() {
             return -1.0;
         }
