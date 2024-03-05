@@ -102,7 +102,7 @@ pub fn mis_weight(
     // vertices in light path
     for i in (0..s.max(2) - 2).rev() {
         ri *= map0(light_path[i].pdf_bck) / map0(light_path[i].pdf_fwd);
-        if !light_path[i].is_delta() && !light_path[(i - 1).max(0)].is_delta() {
+        if !light_path[i].is_delta() && !light_path[i.max(1) - 1].is_delta() {
             sum_ri += ri;
         }
     }
