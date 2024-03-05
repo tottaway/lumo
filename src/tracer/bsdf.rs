@@ -1,7 +1,7 @@
 use crate::{ Direction, Transport, Float, Vec2 };
 use crate::tracer::{ Color, bxdf::BxDF, onb::Onb, hit::Hit };
 
-#[allow(non_snake_case)]
+#[allow(non_snake_case, clippy::upper_case_acronyms)]
 pub struct BSDF {
     BxDF: BxDF
 }

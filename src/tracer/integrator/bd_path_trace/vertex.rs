@@ -160,7 +160,7 @@ impl<'a> Vertex<'a> {
         // normalized
         let wi = ri.dir;
         let angle_pdf = self.material()
-            .bsdf_pdf(wo, wi, &ho, matches!(mode, Transport::Importance));
+            .bsdf_pdf(wo, wi, ho, matches!(mode, Transport::Importance));
         let ng = next.h.ng;
 
         // convert solid angle to area at next

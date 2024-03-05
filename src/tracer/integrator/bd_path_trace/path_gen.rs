@@ -57,7 +57,7 @@ fn walk<'a>(
         ));
         let ho = &vertices[curr].h;
         let wo = ro.dir;
-        match material.bsdf_sample(wo, &ho, rand_utils::unit_square()) {
+        match material.bsdf_sample(wo, ho, rand_utils::unit_square()) {
             None => {
                 // we hit a light. if tracing from a light, discard latest vertex
                 if matches!(mode, Transport::Importance) {
@@ -75,7 +75,7 @@ fn walk<'a>(
                 // normalized
                 let wi = ri.dir;
 
-                pdf_fwd = material.bsdf_pdf(wo, wi, &ho, false);
+                pdf_fwd = material.bsdf_pdf(wo, wi, ho, false);
 
                 if pdf_fwd <= 0.0 {
                     break;
@@ -96,7 +96,7 @@ fn walk<'a>(
                     }
                 };
 
-                let bsdf = material.bsdf_f(wo, wi, mode, &ho);
+                let bsdf = material.bsdf_f(wo, wi, mode, ho);
                 let bsdf = if ho.is_medium() {
                     bsdf * pdf_fwd
                 } else {
@@ -108,7 +108,7 @@ fn walk<'a>(
                 vertices[prev].pdf_bck = if material.is_delta() || !vertices[prev].is_surface() {
                     0.0
                 } else {
-                    let pdf_bck = material.bsdf_pdf(wo, wi, &ho, true);
+                    let pdf_bck = material.bsdf_pdf(wo, wi, ho, true);
                     vertices[curr].solid_angle_to_area(pdf_bck, &vertices[prev])
                 };
 

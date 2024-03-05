@@ -31,6 +31,7 @@ impl BxDF {
 
     pub fn is_diffuse(&self) -> bool { !self.is_specular() }
 
+    #[allow(clippy::match_like_matches_macro)]
     pub fn is_transmission(&self) -> bool {
         match self {
             Self::Transmission(_) | Self::MfTransmission(_) => true,

@@ -22,7 +22,7 @@ impl<T> Instance<T> {
     /// `transform`.
     pub fn new(object: T, transform: Transform) -> Box<Self> {
         let inv_transform = transform.inverse();
-        let normal_transform = inv_transform.matrix3.transpose().into();
+        let normal_transform = inv_transform.matrix3.transpose();
 
         Box::new(Self {
             object,

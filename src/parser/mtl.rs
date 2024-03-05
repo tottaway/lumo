@@ -48,7 +48,7 @@ impl MtlConfig {
             } else {
                 Texture::Solid(self.Kd)
             };
-            let specular_color = Texture::Solid(self.Ks);
+            let _specular_color = Texture::Solid(self.Ks);
 
             let fresnel_enabled = self.illum == 5 || self.illum == 7;
             let is_transparent = self.illum == 4 || self.illum == 6 || self.illum == 7;
@@ -100,7 +100,7 @@ pub fn load_file(
             /* texture map */
             "map_Kd" => {
                 if let Some(ref zip) = zip_file {
-                    let tex_name = tokens[1].replace("\\", "/");
+                    let tex_name = tokens[1].replace('\\', "/");
                     let img = super::_img_from_zip(zip.clone(), &tex_name)?;
                     mtl.map_Kd = Some(img);
                 }
