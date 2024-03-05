@@ -50,8 +50,9 @@ impl MfDistribution {
         roughness: Float,
         eta: Float,
         metallicity: Float,
+        fresnel_enabled: bool
     ) -> Self {
-        Self::Ggx(MicrofacetConfig::new(roughness, eta, metallicity, true))
+        Self::Ggx(MicrofacetConfig::new(roughness, eta, metallicity, fresnel_enabled))
     }
 
     /// might need tuning, send ratio that emittance is multiplied with?

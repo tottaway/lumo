@@ -7,10 +7,15 @@ mod scatter;
 #[derive(Clone, Copy)]
 pub enum BxDF {
     Lambertian,
+    /// Perfect transmission, to be merged with MfTransmission
     Transmission(Float),
+    /// Perfect mirror, to be merged with MfReflection
     Reflection,
+    /// Disney diffuse
     MfDiffuse(MfDistribution),
+    /// Microfacet mirror
     MfReflection(MfDistribution),
+    /// Microfacet glass
     MfTransmission(MfDistribution),
     None,
 }
@@ -23,6 +28,17 @@ impl BxDF {
             _ => false,
         }
     }
+
+    pub fn is_diffuse(&self) -> bool { !self.is_specular() }
+
+    pub fn is_transmission(&self) -> bool {
+        match self {
+            Self::Transmission(_) | Self::MfTransmission(_) => true,
+            _ => false
+        }
+    }
+
+    pub fn is_reflection(&self) -> bool { !self.is_transmission() }
 
     pub fn is_delta(&self) -> bool {
         match self {
@@ -43,7 +59,7 @@ impl BxDF {
             Self::Lambertian => albedo / crate::PI,
             Self::Reflection => Color::WHITE,
             Self::Transmission(eta) => scatter::transmission_f(wo, *eta, mode),
-            Self::MfDiffuse(mfd) => microfacet::diffuse_f(wo, wi, albedo, mfd),
+            Self::MfDiffuse(mfd) => microfacet::diffuse_f(wo, wi, mfd, albedo),
             Self::MfReflection(mfd) => microfacet::reflection_f(wo, wi, mfd, albedo),
             Self::MfTransmission(mfd) => microfacet::transmission_f(wo, wi, mfd, albedo, mode),
             Self::None => Color::BLACK,

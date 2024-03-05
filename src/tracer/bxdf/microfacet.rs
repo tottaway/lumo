@@ -28,6 +28,58 @@ mod util {
 }
 
 /*
+ * MICROFACET REFLECTION
+ */
+
+pub fn reflection_f(
+    wo: Direction,
+    wi: Direction,
+    mfd: &MfDistribution,
+    albedo: Color,
+) -> Color {
+    let v = -wo;
+    let cos_theta_v = v.z.abs();
+    let cos_theta_wi = wi.z.abs();
+    let wh = (wi + v).normalize();
+
+    let d = mfd.d(wh);
+    let f = mfd.fresnel(v, wh);
+    let g = mfd.g(v, wi, wh);
+
+    // need reflection color, its in the .mtl files somewhere
+    albedo * d * f * g / (4.0 * cos_theta_v * cos_theta_wi)
+}
+
+pub fn reflection_sample(
+    wo: Direction,
+    mfd: &MfDistribution,
+    rand_sq: Vec2
+) -> Option<Direction> {
+    let v = -wo;
+    let wh = mfd.sample_normal(v, rand_sq).normalize();
+    let wi = util::reflect(v, wh);
+
+    if wi.z <= 0.0 {
+        // bad sample, do something else?
+        None
+    } else {
+        Some( wi )
+    }
+}
+
+pub fn reflection_pdf(
+    wo: Direction,
+    wi: Direction,
+    mfd: &MfDistribution,
+) -> Float {
+    let v = -wo;
+    let wh = (v + wi).normalize();
+    let wh_dot_v = v.dot(wh);
+
+    mfd.sample_normal_pdf(wh, v) / (4.0 * wh_dot_v)
+}
+
+/*
  * MICROFACET DIFFUSE
  * Disney diffuse (Burley 2012) with renormalization to conserve energy
  * as done in Frostbite (Lagarde et al. 2014)
@@ -36,8 +88,8 @@ mod util {
 pub fn diffuse_f(
     wo: Direction,
     wi: Direction,
-    albedo: Color,
     mfd: &MfDistribution,
+    albedo: Color,
 ) -> Color {
     let v = -wo;
     let wh = (v + wi).normalize();
@@ -48,7 +100,8 @@ pub fn diffuse_f(
     let f = mfd.fresnel(v, wh);
     let disney = mfd.disney_diffuse(cos_theta_v, cos_theta_wi, cos_theta_wh);
 
-    (1.0 - f) * albedo * disney / crate::PI
+    albedo * (1.0 - f) * disney / crate::PI
+        + reflection_f(wo, wi, mfd, albedo)
 }
 
 /*
@@ -98,6 +151,7 @@ pub fn transmission_f(
     scale * albedo * d * (1.0 - f) * g
         * (wh_dot_wi * wh_dot_v / (cos_theta_wi * cos_theta_v)).abs()
         / (eta_ratio * wh_dot_wi + wh_dot_v).powi(2)
+        + reflection_f(wo, wi, mfd, albedo)
 }
 
 pub fn transmission_sample(
@@ -159,56 +213,4 @@ pub fn transmission_pdf(
                 / (wh_dot_v + eta_ratio * wh_dot_wi).powi(2)
         }
     }
-}
-
-/*
- * MICROFACET REFLECTION
- */
-
-pub fn reflection_f(
-    wo: Direction,
-    wi: Direction,
-    mfd: &MfDistribution,
-    albedo: Color,
-) -> Color {
-    let v = -wo;
-    let cos_theta_v = v.z.abs();
-    let cos_theta_wi = wi.z.abs();
-    let wh = (wi + v).normalize();
-
-    let d = mfd.d(wh);
-    let f = mfd.fresnel(v, wh);
-    let g = mfd.g(v, wi, wh);
-
-    // need reflection color, its in the .mtl files somewhere
-    albedo * d * f * g / (4.0 * cos_theta_v * cos_theta_wi)
-}
-
-pub fn reflection_sample(
-    wo: Direction,
-    mfd: &MfDistribution,
-    rand_sq: Vec2
-) -> Option<Direction> {
-    let v = -wo;
-    let wh = mfd.sample_normal(v, rand_sq).normalize();
-    let wi = util::reflect(v, wh);
-
-    if wi.z <= 0.0 {
-        // bad sample, do something else?
-        None
-    } else {
-        Some( wi )
-    }
-}
-
-pub fn reflection_pdf(
-    wo: Direction,
-    wi: Direction,
-    mfd: &MfDistribution,
-) -> Float {
-    let v = -wo;
-    let wh = (v + wi).normalize();
-    let wh_dot_v = v.dot(wh);
-
-    mfd.sample_normal_pdf(wh, v) / (4.0 * wh_dot_v)
 }

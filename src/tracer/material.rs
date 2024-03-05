@@ -19,54 +19,77 @@ pub enum Material {
 }
 
 impl Material {
-    /// Metallic microfacet material
-    pub fn metallic(texture: Texture, roughness: Float) -> Self {
-        let mfd = MfDistribution::new(roughness, 1.5, 1.0);
-        let bsdf = BSDF::new()
-            .add(BxDF::MfDiffuse(mfd))
-            .add(BxDF::MfReflection(mfd));
+    /// General microfacet constructor
+    pub fn microfacet(
+        texture: Texture,
+        roughness: Float,
+        eta: Float,
+        k: Float,
+        is_transparent: bool,
+        fresnel_enabled: bool
+    ) -> Self {
+        let mfd = MfDistribution::new(roughness, eta, k, fresnel_enabled);
+        let bsdf = if is_transparent {
+            BSDF::new(BxDF::MfTransmission(mfd))
+        } else {
+            BSDF::new(BxDF::MfDiffuse(mfd))
+        };
         Self::Microfacet(bsdf, texture, mfd)
     }
 
-    /// Specular microfacet material
-    pub fn specular(texture: Texture, roughness: Float) -> Self {
-        let mfd = MfDistribution::new(roughness, 1.5, 0.0);
-        let bsdf = BSDF::new()
-            .add(BxDF::MfDiffuse(mfd))
-            .add(BxDF::MfReflection(mfd));
+    /// Microfacet mirror with assignable roughness
+    pub fn rough_mirror(texture: Texture, roughness: Float, fresnel_enabled: bool) -> Self {
+        let eta = 1.5;
+        let k = 0.0;
+        let mfd = MfDistribution::new(roughness, eta, k, fresnel_enabled);
+        let bsdf = BSDF::new(BxDF::MfReflection(mfd));
         Self::Microfacet(bsdf, texture, mfd)
     }
 
     /// Diffuse material
     pub fn diffuse(texture: Texture) -> Self {
-        let mfd = MfDistribution::new(1.0, 1.5, 0.0);
-        let bsdf = BSDF::new()
-            .add(BxDF::MfDiffuse(mfd))
-            .add(BxDF::MfReflection(mfd));
-        Self::Microfacet(bsdf, texture, mfd)
+        let roughness = 1.0;
+        let eta = 1.5;
+        let k = 0.0;
+        let is_transparent = false;
+        let fresnel_enabled = false;
+
+        Self::microfacet(
+            texture,
+            roughness,
+            eta,
+            k,
+            is_transparent,
+            fresnel_enabled,
+        )
     }
 
     /// Transparent material
     pub fn transparent(texture: Texture, roughness: Float, eta: Float) -> Self {
-        let mfd = MfDistribution::new(roughness, eta, 0.0);
-        let bsdf = BSDF::new()
-            .add(BxDF::MfReflection(mfd))
-            .add(BxDF::MfTransmission(mfd));
-        Self::Microfacet(bsdf, texture, mfd)
+        let k = 0.0;
+        let is_transparent = true;
+        let fresnel_enabled = true;
+
+        Self::microfacet(
+            texture,
+            roughness,
+            eta,
+            k,
+            is_transparent,
+            fresnel_enabled,
+        )
     }
 
     /// Perfect reflection
     pub fn mirror() -> Self {
-        let bsdf = BSDF::new()
-            .add(BxDF::Reflection);
+        let bsdf = BSDF::new(BxDF::Reflection);
         Self::Standard(bsdf, Texture::default())
     }
 
     /// Perfect refraction
     pub fn glass(eta: Float) -> Self {
         assert!(eta >= 1.0);
-        let bsdf = BSDF::new()
-            .add(BxDF::Transmission(eta));
+        let bsdf = BSDF::new(BxDF::Transmission(eta));
         Self::Standard(bsdf, Texture::default())
     }
 

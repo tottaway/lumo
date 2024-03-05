@@ -50,21 +50,19 @@ impl MtlConfig {
             };
             let specular_color = Texture::Solid(self.Ks);
 
-            let fresnel = self.illum == 5 || self.illum == 7;
+            let fresnel_enabled = self.illum == 5 || self.illum == 7;
             let is_transparent = self.illum == 4 || self.illum == 6 || self.illum == 7;
             // blender uses this mapping
             let roughness = 1.0 - self.Ns.min(900.0).sqrt() / 30.0;
 
-            Material::metallic(diffuse_color, roughness)
-/*
             Material::microfacet(
-                texture,
-                self.roughness,
-                self.refraction_idx,
-                metallicity,
+                diffuse_color,
+                roughness,
+                self.Ni,
+                0.0,
                 is_transparent,
-        )
-            */
+                fresnel_enabled,
+            )
         }
     }
 }
