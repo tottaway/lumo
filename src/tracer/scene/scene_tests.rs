@@ -23,14 +23,14 @@ fn scene(m: Material) -> Scene {
 
 #[test]
 fn light_no_pass() {
-    let s = scene(Material::Mirror);
+    let s = scene(Material::mirror());
     let r = Ray::new(Point::ZERO, Direction::Y);
     assert!(s.hit_light(&r, s.lights[0].as_ref()).is_none());
 }
 
 #[test]
 fn object_behind_light() {
-    let s = scene(Material::Mirror);
+    let s = scene(Material::mirror());
     let r = Ray::new(3.0 * Point::Y, Direction::NEG_Y);
     assert!(s.hit_light(&r, s.lights[0].as_ref()).is_some());
 }
@@ -48,7 +48,7 @@ fn hits_closest() {
     s.add(Plane::new(
         2.0 * Point::Y,
         Point::NEG_Y,
-        Material::Mirror,
+        Material::mirror(),
     ));
 
     let r = Ray::new(Point::ZERO, Point::Y);

@@ -3,7 +3,7 @@ use super::*;
 const NUM_RAYS: usize = 10000;
 
 fn unit_disk() -> Box<Disk> {
-    Disk::new(Point::ZERO, Point::Z, 1.0, Material::Mirror)
+    Disk::new(Point::ZERO, Point::Z, 1.0, Material::mirror())
 }
 
 #[test]

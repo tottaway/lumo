@@ -15,9 +15,10 @@ fn main() -> Result<(), std::io::Error> {
     scene.add(Sphere::new(
         Vec3::new(-0.45, -0.5, -1.5),
         0.25,
-        Material::metallic(
+        Material::rough_mirror(
             Texture::Solid(Color::WHITE),
             0.0,
+            true,
         )
     ));
 

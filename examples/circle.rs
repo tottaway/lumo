@@ -32,7 +32,7 @@ fn main() -> Result<(), std::io::Error> {
     scene.add(Plane::new(
         ground * Vec3::Y,
         Vec3::Y,
-        Material::metallic(Texture::Solid(Color::new(150, 40, 39)), 0.009999),
+        Material::rough_mirror(Texture::Solid(Color::new(150, 40, 39)), 0.009999, true),
     ));
 
     let r = 0.2;
@@ -54,7 +54,7 @@ fn main() -> Result<(), std::io::Error> {
         scene.add(Sphere::new(
             Vec3::new(x, y, z),
             r,
-            Material::specular(Texture::Solid(hsv_to_rgb(theta - offset)), 0.2),
+            Material::diffuse(Texture::Solid(hsv_to_rgb(theta - offset))),
         ));
     }
 

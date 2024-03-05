@@ -52,9 +52,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     /* bust */
     scene.add(
-        Cube::new(Material::metallic(
+        Cube::new(Material::rough_mirror(
             Texture::Solid(Color::new(61, 45, 36)),
             0.0,
+            true,
         ))
         .translate(-0.5, -0.5, -0.5)
         .scale(0.45, 0.5, 0.45)
@@ -74,9 +75,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 	scene.add(
 	    parser::mesh_from_url(
                 NEFE_URL,
-		Material::specular(
+		Material::microfacet(
                     Texture::Image(parser::texture_from_url(NEFE_URL, TEX_FILE)?),
-                    0.8
+                    0.8,
+                    1.5,
+                    0.0,
+                    false,
+                    true,
                 )
             )?
 		.to_unit_size()
