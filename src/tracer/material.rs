@@ -39,7 +39,7 @@ impl Material {
 
     /// Microfacet mirror with assignable roughness
     pub fn rough_mirror(texture: Texture, roughness: Float, fresnel_enabled: bool) -> Self {
-        let eta = 1.5;
+        let eta = 2.5;
         let k = 0.0;
         let mfd = MfDistribution::new(roughness, eta, k, fresnel_enabled);
         let bsdf = BSDF::new(BxDF::MfReflection(mfd));

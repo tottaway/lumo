@@ -25,29 +25,41 @@ mod util {
             Some( -v * eta_ratio + (eta_ratio * cos_to_abs - cos_ti) * n )
         }
     }
+
+    pub fn reflect_coeff(
+        wo: Direction,
+        wi: Direction,
+        mfd: &MfDistribution,
+    ) -> Float {
+        let v = -wo;
+        let cos_theta_v = v.z.abs();
+        let cos_theta_wi = wi.z.abs();
+        let wh = (wi + v).normalize();
+
+        let d = mfd.d(wh);
+        let f = mfd.f(v, wh);
+        let g = mfd.g(v, wi, wh);
+
+        // need reflection color, its in the .mtl files somewhere
+        d * f * g / (4.0 * cos_theta_v * cos_theta_wi)
+    }
+
 }
 
 /*
  * MICROFACET REFLECTION
  */
-
 pub fn reflection_f(
     wo: Direction,
     wi: Direction,
     mfd: &MfDistribution,
-    albedo: Color,
+    albedo: Color
 ) -> Color {
     let v = -wo;
-    let cos_theta_v = v.z.abs();
-    let cos_theta_wi = wi.z.abs();
     let wh = (wi + v).normalize();
-
-    let d = mfd.d(wh);
     let f = mfd.f(v, wh);
-    let g = mfd.g(v, wi, wh);
 
-    // need reflection color, its in the .mtl files somewhere
-    albedo * d * f * g / (4.0 * cos_theta_v * cos_theta_wi)
+    albedo * ((1.0 - f) / crate::PI + util::reflect_coeff(wo, wi, mfd))
 }
 
 pub fn reflection_sample(
@@ -100,8 +112,7 @@ pub fn diffuse_f(
     let f = mfd.f(v, wh);
     let disney = mfd.disney_diffuse(cos_theta_v, cos_theta_wi, cos_theta_wh);
 
-    albedo * (1.0 - f) * disney / crate::PI
-        + reflection_f(wo, wi, mfd, albedo)
+    albedo * ((1.0 - f) * disney / crate::PI + util::reflect_coeff(wo, wi, mfd))
 }
 
 /*
@@ -148,10 +159,10 @@ pub fn transmission_f(
     let f = mfd.f(v, wh);
     let g = mfd.g(v, wi, wh);
 
-    scale * albedo * d * (1.0 - f) * g
+    albedo * (scale * d * (1.0 - f) * g
         * (wh_dot_wi * wh_dot_v / (cos_theta_wi * cos_theta_v)).abs()
         / (eta_ratio * wh_dot_wi + wh_dot_v).powi(2)
-        + reflection_f(wo, wi, mfd, albedo)
+        + util::reflect_coeff(wo, wi, mfd))
 }
 
 pub fn transmission_sample(

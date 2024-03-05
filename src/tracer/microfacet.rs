@@ -154,11 +154,8 @@ impl MfDistribution {
     /// * `v`      - Direction to viewer in shading space
     /// * `wh`     - Microsurface normal in shading space
     pub fn f(&self, v: Direction, wh: Normal) -> Float {
-        if !self.fresnel_enabled() {
-            return -1.0;
-        }
-        // use simpler form of fresnel equations for dielectrics
         if self.k() == 0.0 {
+            // use simpler form of fresnel equations for dielectrics
             self.fr_transmission(v, wh)
         } else {
             self.fr_complex(v, wh)
