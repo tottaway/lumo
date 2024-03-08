@@ -201,7 +201,7 @@ impl MfDistribution {
         let r_per = ( (eta_o * cos_o) - (eta_i * cos_i) )
                   / ( (eta_o * cos_o) + (eta_i * cos_i) );
 
-        0.5 * (r_par * r_par + r_per * r_per)
+        (r_par * r_par + r_per * r_per) / 2.0
     }
 
 
