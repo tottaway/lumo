@@ -29,8 +29,11 @@ impl Material {
         fresnel_enabled: bool
     ) -> Self {
         let mfd = MfDistribution::new(roughness, eta, k, fresnel_enabled);
+        // dirty dirty...
         let bsdf = if is_transparent {
             BSDF::new(BxDF::MfTransmission(mfd))
+        } else if fresnel_enabled {
+            BSDF::new(BxDF::MfReflection(mfd))
         } else {
             BSDF::new(BxDF::MfDiffuse(mfd))
         };
