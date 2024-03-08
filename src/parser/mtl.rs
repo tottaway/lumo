@@ -46,7 +46,8 @@ impl MtlConfig {
             let diffuse_color = if let Some(img) = &self.map_Kd {
                 Texture::Image(img.clone())
             } else {
-                Texture::Solid(self.Kd)
+                // TODO: separate Ks
+                Texture::Solid(self.Kd + self.Ks)
             };
             let _specular_color = Texture::Solid(self.Ks);
 
