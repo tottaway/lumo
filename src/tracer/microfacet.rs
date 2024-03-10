@@ -62,7 +62,7 @@ impl MfDistribution {
 
     /// Does the material have delta scattering distribution?
     pub fn is_delta(&self) -> bool {
-        self.get_config().roughness < 1e-2
+        self.get_config().roughness < 1e-3
     }
 
     /// Get refraction index from config
