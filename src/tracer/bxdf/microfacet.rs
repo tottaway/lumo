@@ -93,10 +93,8 @@ pub fn reflection_pdf(
 
 /*
  * MICROFACET DIFFUSE
- * Disney diffuse (Burley 2012) with renormalization to conserve energy
- * as done in Frostbite (Lagarde et al. 2014)
+ * Just lambertian
  */
-
 pub fn diffuse_f(
     wo: Direction,
     wi: Direction,
@@ -106,13 +104,15 @@ pub fn diffuse_f(
     let v = -wo;
     let wh = (v + wi).normalize();
 
+    /*
     let cos_theta_v = v.z;
     let cos_theta_wi = wi.z;
     let cos_theta_wh = wh.z;
-    let f = mfd.f(v, wh);
     let disney = mfd.disney_diffuse(cos_theta_v, cos_theta_wi, cos_theta_wh);
+    */
+    let f = mfd.f(v, wh);
 
-    albedo * ((1.0 - f) * disney / crate::PI + util::reflect_coeff(wo, wi, mfd))
+    albedo * ((1.0 - f) / crate::PI + util::reflect_coeff(wo, wi, mfd))
 }
 
 /*

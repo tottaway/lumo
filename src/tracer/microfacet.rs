@@ -93,7 +93,7 @@ impl MfDistribution {
 
     /// Disney diffuse (Burley 2012) with renormalization to conserve energy
     /// as done in Frostbite (Lagarde et al. 2014)
-    pub fn disney_diffuse(
+    pub fn _disney_diffuse(
         &self,
         cos_theta_v: Float,
         cos_theta_wh: Float,
