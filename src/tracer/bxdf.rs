@@ -7,7 +7,7 @@ mod scatter;
 #[derive(Clone, Copy)]
 pub enum BxDF {
     Lambertian,
-    /// Perfect transmission, to be merged with MfTransmission
+    /// Perfect transmission, to be merged with MfDielectric
     Transmission(Float),
     /// Perfect mirror, to be merged with MfReflection
     Reflection,
@@ -16,14 +16,14 @@ pub enum BxDF {
     /// Microfacet mirror
     MfReflection(MfDistribution),
     /// Microfacet glass
-    MfTransmission(MfDistribution),
+    MfDielectric(MfDistribution),
     None,
 }
 
 impl BxDF {
     pub fn is_specular(&self) -> bool {
         match self {
-            Self::Reflection | Self::Transmission(_) | Self::MfTransmission(_) => true,
+            Self::Reflection | Self::Transmission(_) | Self::MfDielectric(_) => true,
             Self::MfReflection(mfd) => mfd.is_specular(),
             _ => false,
         }
@@ -34,7 +34,7 @@ impl BxDF {
     #[allow(clippy::match_like_matches_macro)]
     pub fn is_transmission(&self) -> bool {
         match self {
-            Self::Transmission(_) | Self::MfTransmission(_) => true,
+            Self::Transmission(_) | Self::MfDielectric(_) => true,
             _ => false
         }
     }
@@ -44,7 +44,7 @@ impl BxDF {
     pub fn is_delta(&self) -> bool {
         match self {
             Self::Reflection | Self::Transmission(_) => true,
-            Self::MfReflection(mfd) | Self::MfTransmission(mfd) => mfd.is_delta(),
+            Self::MfReflection(mfd) | Self::MfDielectric(mfd) => mfd.is_delta(),
             _ => false,
         }
     }
@@ -62,7 +62,7 @@ impl BxDF {
             Self::Transmission(eta) => scatter::transmission_f(wo, *eta, mode),
             Self::MfDiffuse(mfd) => microfacet::diffuse_f(wo, wi, mfd, albedo),
             Self::MfReflection(mfd) => microfacet::reflection_f(wo, wi, mfd, albedo),
-            Self::MfTransmission(mfd) => microfacet::transmission_f(wo, wi, mfd, albedo, mode),
+            Self::MfDielectric(mfd) => microfacet::transmission_f(wo, wi, mfd, albedo, mode),
             Self::None => Color::BLACK,
         }
     }
@@ -74,7 +74,7 @@ impl BxDF {
             Self::Transmission(eta) => scatter::transmission_sample(wo, *eta),
             Self::MfDiffuse(_) => Some( rand_utils::square_to_cos_hemisphere(rand_sq) ),
             Self::MfReflection(mfd) => microfacet::reflection_sample(wo, mfd, rand_sq),
-            Self::MfTransmission(mfd) => microfacet::transmission_sample(wo, mfd, rand_sq),
+            Self::MfDielectric(mfd) => microfacet::transmission_sample(wo, mfd, rand_sq),
             Self::None => None,
         }
     }
@@ -85,7 +85,7 @@ impl BxDF {
             Self::Lambertian => scatter::lambertian_pdf(wi),
             Self::MfDiffuse(_) => scatter::lambertian_pdf(wi),
             Self::MfReflection(mfd) => microfacet::reflection_pdf(wo, wi, mfd),
-            Self::MfTransmission(mfd) => microfacet::transmission_pdf(wo, wi, mfd, swap_dir),
+            Self::MfDielectric(mfd) => microfacet::transmission_pdf(wo, wi, mfd, swap_dir),
             Self::None => 0.0,
         }
     }

@@ -31,7 +31,7 @@ impl Material {
         let mfd = MfDistribution::new(roughness, eta, k, fresnel_enabled);
         // dirty dirty...
         let bsdf = if is_transparent {
-            BSDF::new(BxDF::MfTransmission(mfd))
+            BSDF::new(BxDF::MfDielectric(mfd))
         } else if fresnel_enabled {
             BSDF::new(BxDF::MfReflection(mfd))
         } else {
