@@ -61,8 +61,9 @@ pub fn conductor_f(
     mfd: &MfDistribution,
     albedo: Color
 ) -> Color {
+    let v = -wo;
     if mfd.is_delta() {
-        let f = mfd.f(wi, Normal::Z);
+        let f = mfd.f(v, Normal::Z);
         albedo * f / wi.z
     } else {
         albedo * util::reflect_coeff(wo, wi, mfd)
