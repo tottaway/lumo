@@ -140,11 +140,12 @@ pub fn dielectric_f(
 
     let cos_theta_v = v.z;
     let cos_theta_wi = wi.z;
+    let is_reflection = cos_theta_v * cos_theta_wi > 0.0;
 
-    let eta_ratio = if cos_theta_v < 0.0 {
-        1.0 / mfd.eta()
+    let eta_ratio = if is_reflection {
+        1.0
     } else {
-        mfd.eta()
+        if cos_theta_v < 0.0 { 1.0 / mfd.eta() } else { mfd.eta() }
     };
 
     let wh = (wi * eta_ratio + v).normalize();
@@ -156,18 +157,20 @@ pub fn dielectric_f(
     let d = mfd.d(wh);
     let f = mfd.f(v, wh);
     let g = mfd.g(v, wi, wh);
-    // scale coefficient if transporting radiance
-    let scale = match mode {
-        Transport::Radiance => eta_ratio * eta_ratio,
-        Transport::Importance => 1.0,
-    };
 
-    let transmission = d * (1.0 - f) * g / scale
-        * (wh_dot_wi * wh_dot_v / (cos_theta_wi * cos_theta_v)).abs()
-        / (eta_ratio * wh_dot_wi + wh_dot_v).powi(2);
-    let reflection = util::reflect_coeff(wo, wi, mfd);
-    // these should not be added but only one of them should be used
-    albedo * (transmission + reflection)
+    if is_reflection {
+        albedo * util::reflect_coeff(wo, wi, mfd)
+    } else {
+        // scale coefficient if transporting radiance
+        let scale = match mode {
+            Transport::Radiance => eta_ratio * eta_ratio,
+            Transport::Importance => 1.0,
+        };
+
+        albedo * d * (1.0 - f) * g / scale
+            * (wh_dot_wi * wh_dot_v / (cos_theta_wi * cos_theta_v)).abs()
+            / (eta_ratio * wh_dot_wi + wh_dot_v).powi(2)
+    }
 }
 
 pub fn dielectric_sample(
