@@ -139,11 +139,6 @@ pub fn dielectric_f(
     let cos_theta_v = v.z;
     let cos_theta_wi = wi.z;
 
-    /* on the same hemisphere */
-    if cos_theta_v * cos_theta_wi > 0.0 {
-        return Color::BLACK;
-    }
-
     let eta_ratio = if cos_theta_v < 0.0 {
         1.0 / mfd.eta()
     } else {
@@ -156,20 +151,16 @@ pub fn dielectric_f(
     let wh_dot_v = wh.dot(v);
     let wh_dot_wi = wh.dot(wi);
 
-    /* same hemisphere w.r.t. wh */
-    if wh_dot_v * wh_dot_wi > 0.0 {
-        return Color::BLACK;
-    }
-
     let d = mfd.d(wh);
     let f = mfd.f(v, wh);
     let g = mfd.g(v, wi, wh);
+    // scale coefficient if transporting radiance
     let scale = match mode {
         Transport::Radiance => eta_ratio * eta_ratio,
         Transport::Importance => 1.0,
     };
 
-    let transmission = scale * d * (1.0 - f) * g
+    let transmission = d * (1.0 - f) * g / scale
         * (wh_dot_wi * wh_dot_v / (cos_theta_wi * cos_theta_v)).abs()
         / (eta_ratio * wh_dot_wi + wh_dot_v).powi(2);
     let reflection = util::reflect_coeff(wo, wi, mfd);
