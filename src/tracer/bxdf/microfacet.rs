@@ -137,6 +137,7 @@ pub fn dielectric_f(
     mode: Transport,
 ) -> Color {
     let v = -wo;
+
     let cos_theta_v = v.z;
     let cos_theta_wi = wi.z;
 
@@ -165,6 +166,7 @@ pub fn dielectric_f(
         * (wh_dot_wi * wh_dot_v / (cos_theta_wi * cos_theta_v)).abs()
         / (eta_ratio * wh_dot_wi + wh_dot_v).powi(2);
     let reflection = util::reflect_coeff(wo, wi, mfd);
+    // these should not be added but only one of them should be used
     albedo * (transmission + reflection)
 }
 
@@ -175,11 +177,13 @@ pub fn dielectric_sample(
 ) -> Option<Direction> {
     let v = -wo;
     let inside = v.z < 0.0;
-    // v needs to be "outside" for normal sampling
-    let wh = if inside {
-        mfd.sample_normal(-v, rand_sq).normalize()
+
+    let wh = if mfd.is_delta() {
+        Normal::Z
     } else {
-        mfd.sample_normal(v, rand_sq).normalize()
+        // v needs to be same direction as geometric normal for mfd sampling
+        let v_oriented = if inside { -v } else { v };
+        mfd.sample_normal(v_oriented, rand_sq).normalize()
     };
 
     // importance sample reflection/transmission with fresnel
