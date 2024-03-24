@@ -85,8 +85,21 @@ impl Material {
 
     /// Perfect reflection
     pub fn mirror() -> Self {
-        let bsdf = BSDF::new(BxDF::Reflection);
-        Self::Standard(bsdf, Texture::default())
+        let texture = Texture::Solid(Color::WHITE);
+        let roughness = 0.0;
+        let eta = 2.5;
+        let k = 0.0;
+        let is_transparent = false;
+        let fresnel_enabled = true;
+
+        Self::microfacet(
+            texture,
+            roughness,
+            eta,
+            k,
+            is_transparent,
+            fresnel_enabled,
+        )
     }
 
     /// Perfect refraction
