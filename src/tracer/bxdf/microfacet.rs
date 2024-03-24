@@ -53,9 +53,9 @@ mod util {
 }
 
 /*
- * MICROFACET REFLECTION
+ * MICROFACET CONDUCTOR
  */
-pub fn reflection_f(
+pub fn conductor_f(
     wo: Direction,
     wi: Direction,
     mfd: &MfDistribution,
@@ -68,7 +68,7 @@ pub fn reflection_f(
     albedo * ((1.0 - f) / crate::PI + util::reflect_coeff(wo, wi, mfd))
 }
 
-pub fn reflection_sample(
+pub fn conductor_sample(
     wo: Direction,
     mfd: &MfDistribution,
     rand_sq: Vec2
@@ -78,7 +78,7 @@ pub fn reflection_sample(
     util::reflect(v, wh)
 }
 
-pub fn reflection_pdf(
+pub fn conductor_pdf(
     wo: Direction,
     wi: Direction,
     mfd: &MfDistribution,
@@ -115,10 +115,10 @@ pub fn diffuse_f(
 }
 
 /*
- * MICROFACET TRANSMISSION
+ * MICROFACET DIELECTRIC
  */
 
-pub fn transmission_f(
+pub fn dielectric_f(
     wo: Direction,
     wi: Direction,
     mfd: &MfDistribution,
@@ -166,7 +166,7 @@ pub fn transmission_f(
     albedo * (transmission + reflection)
 }
 
-pub fn transmission_sample(
+pub fn dielectric_sample(
     wo: Direction,
     mfd: &MfDistribution,
     rand_sq: Vec2
@@ -197,7 +197,7 @@ pub fn transmission_sample(
     }
 }
 
-pub fn transmission_pdf(
+pub fn dielectric_pdf(
     wo: Direction,
     wi: Direction,
     mfd: &MfDistribution,

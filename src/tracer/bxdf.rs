@@ -61,8 +61,8 @@ impl BxDF {
             Self::Reflection => Color::WHITE,
             Self::Transmission(eta) => scatter::transmission_f(wo, *eta, mode),
             Self::MfDiffuse(mfd) => microfacet::diffuse_f(wo, wi, mfd, albedo),
-            Self::MfConductor(mfd) => microfacet::reflection_f(wo, wi, mfd, albedo),
-            Self::MfDielectric(mfd) => microfacet::transmission_f(wo, wi, mfd, albedo, mode),
+            Self::MfConductor(mfd) => microfacet::conductor_f(wo, wi, mfd, albedo),
+            Self::MfDielectric(mfd) => microfacet::dielectric_f(wo, wi, mfd, albedo, mode),
             Self::None => Color::BLACK,
         }
     }
@@ -73,8 +73,8 @@ impl BxDF {
             Self::Lambertian => Some( rand_utils::square_to_cos_hemisphere(rand_sq) ),
             Self::Transmission(eta) => scatter::transmission_sample(wo, *eta),
             Self::MfDiffuse(_) => Some( rand_utils::square_to_cos_hemisphere(rand_sq) ),
-            Self::MfConductor(mfd) => microfacet::reflection_sample(wo, mfd, rand_sq),
-            Self::MfDielectric(mfd) => microfacet::transmission_sample(wo, mfd, rand_sq),
+            Self::MfConductor(mfd) => microfacet::conductor_sample(wo, mfd, rand_sq),
+            Self::MfDielectric(mfd) => microfacet::dielectric_sample(wo, mfd, rand_sq),
             Self::None => None,
         }
     }
@@ -84,8 +84,8 @@ impl BxDF {
             Self::Reflection | Self::Transmission(_) => 1.0,
             Self::Lambertian => scatter::lambertian_pdf(wi),
             Self::MfDiffuse(_) => scatter::lambertian_pdf(wi),
-            Self::MfConductor(mfd) => microfacet::reflection_pdf(wo, wi, mfd),
-            Self::MfDielectric(mfd) => microfacet::transmission_pdf(wo, wi, mfd, swap_dir),
+            Self::MfConductor(mfd) => microfacet::conductor_pdf(wo, wi, mfd),
+            Self::MfDielectric(mfd) => microfacet::dielectric_pdf(wo, wi, mfd, swap_dir),
             Self::None => 0.0,
         }
     }
