@@ -61,10 +61,12 @@ pub fn conductor_f(
     mfd: &MfDistribution,
     albedo: Color
 ) -> Color {
-    let v = -wo;
-    let wh = (wi + v).normalize();
-
-    albedo * util::reflect_coeff(wo, wi, mfd)
+    if mfd.is_delta() {
+        let f = mfd.f(wi, Normal::Z);
+        albedo * f / wi.z
+    } else {
+        albedo * util::reflect_coeff(wo, wi, mfd)
+    }
 }
 
 pub fn conductor_sample(
@@ -73,8 +75,13 @@ pub fn conductor_sample(
     rand_sq: Vec2
 ) -> Option<Direction> {
     let v = -wo;
-    let wh = mfd.sample_normal(v, rand_sq).normalize();
-    util::reflect(v, wh)
+
+    if mfd.is_delta() {
+        Some( Direction::new(-v.x, -v.y, v.z) )
+    } else {
+        let wh = mfd.sample_normal(v, rand_sq).normalize();
+        util::reflect(v, wh)
+    }
 }
 
 pub fn conductor_pdf(
@@ -84,9 +91,13 @@ pub fn conductor_pdf(
 ) -> Float {
     let v = -wo;
     let wh = (v + wi).normalize();
-    let wh_dot_v = v.dot(wh);
 
-    mfd.sample_normal_pdf(wh, v) / (4.0 * wh_dot_v)
+    if mfd.is_delta() {
+        if 1.0 - wh.z < crate::EPSILON { 1.0 } else { 0.0 }
+    } else {
+        let wh_dot_v = v.dot(wh);
+        mfd.sample_normal_pdf(wh, v) / (4.0 * wh_dot_v)
+    }
 }
 
 /*
