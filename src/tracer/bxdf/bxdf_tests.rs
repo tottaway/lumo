@@ -6,9 +6,40 @@ const NUM_SAMPLES: usize = 10_000_000;
 #[test]
 fn lambertian_sampling() {
     let bxdf = BxDF::Lambertian;
-    let bins = do_sampling(bxdf);
 
-    assert_bins(bins);
+    assert_bins(do_sampling(bxdf));
+}
+
+#[test]
+fn conductor_sampling_75() {
+    let mfd = MfDistribution::new(0.75, 1.0, 0.0, true);
+    let bxdf = BxDF::MfConductor(mfd);
+
+    assert_bins(do_sampling(bxdf));
+}
+
+#[test]
+fn conductor_sampling_50() {
+    let mfd = MfDistribution::new(0.5, 1.0, 0.0, true);
+    let bxdf = BxDF::MfConductor(mfd);
+
+    assert_bins(do_sampling(bxdf));
+}
+
+#[test]
+fn conductor_sampling_25() {
+    let mfd = MfDistribution::new(0.25, 1.0, 0.0, true);
+    let bxdf = BxDF::MfConductor(mfd);
+
+    assert_bins(do_sampling(bxdf));
+}
+
+#[test]
+fn conductor_sampling_10() {
+    let mfd = MfDistribution::new(0.10, 1.0, 0.0, true);
+    let bxdf = BxDF::MfConductor(mfd);
+
+    assert_bins(do_sampling(bxdf));
 }
 
 fn print_bins(bins: &Vec<Vec<Float>>) {
@@ -73,6 +104,7 @@ fn do_sampling(bxdf: BxDF) -> Vec<Vec<Float>> {
                 let phi_idx = (wi_phi * NUM_BINS as Float) as usize;
                 let wi_cos_theta = wi.z;
                 let theta_idx = (wi_cos_theta * NUM_BINS as Float) as usize;
+                // can be out of bounds in rare cases. fix if it happens.
                 bins[theta_idx][phi_idx] += 1.0 / pdf;
             }
         }
