@@ -128,7 +128,6 @@ pub fn diffuse_f(
 /*
  * MICROFACET DIELECTRIC
  */
-
 pub fn dielectric_f(
     wo: Direction,
     wi: Direction,
@@ -236,11 +235,7 @@ pub fn dielectric_pdf(
         if v_inside { 1.0 / mfd.eta() } else { mfd.eta() }
     };
 
-    let wh = if mfd.is_delta() {
-        Normal::Z
-    } else {
-        (v + wi * eta_ratio).normalize()
-    };
+    let wh = (v + wi * eta_ratio).normalize();
     let wh = if wh.z < 0.0 { -wh } else { wh };
     let wh_dot_v = v.dot(wh);
     let wh_dot_wi = wi.dot(wh);
@@ -255,14 +250,22 @@ pub fn dielectric_pdf(
 
     if is_reflection {
         if mfd.is_delta() {
-            pr / (pr + pt)
+            if 1.0 - wh.z < crate::EPSILON {
+                pr / (pr + pt)
+            } else {
+                0.0
+            }
         } else {
             mfd.sample_normal_pdf(wh, v) / (4.0 * wh_dot_v.abs())
                 * pr / (pr + pt)
         }
     } else {
         if mfd.is_delta() {
-            pt / (pr + pt)
+            if 1.0 - wh.z < crate::EPSILON {
+                pt / (pr + pt)
+            } else {
+                0.0
+            }
         } else {
             mfd.sample_normal_pdf(wh, v)
                 * wh_dot_wi.abs() / (wh_dot_wi + wh_dot_v / eta_ratio).powi(2)
