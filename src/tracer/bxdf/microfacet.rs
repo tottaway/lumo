@@ -252,17 +252,17 @@ pub fn dielectric_pdf(
     let pr = mfd.f(v, wh);
     let pt = 1.0 - pr;
 
-    if is_reflection {
-        if mfd.is_delta() {
-            if 1.0 - wh.z < crate::EPSILON {
-                pr / (pr + pt)
-            } else {
-                0.0
-            }
+    if is_reflection && mfd.is_delta() {
+        // reflection with delta
+        if 1.0 - wh.z < crate::EPSILON {
+            pr / (pr + pt)
         } else {
-            mfd.sample_normal_pdf(wh, v) / (4.0 * wh_dot_v.abs())
-                * pr / (pr + pt)
+            0.0
         }
+    } else if is_reflection {
+        // reflection with rough surface
+        mfd.sample_normal_pdf(wh, v) / (4.0 * wh_dot_v.abs())
+            * pr / (pr + pt)
     } else if mfd.is_delta() {
         // transmission with delta
         if 1.0 - wh.z < crate::EPSILON {
