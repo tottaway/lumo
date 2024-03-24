@@ -63,9 +63,8 @@ pub fn conductor_f(
 ) -> Color {
     let v = -wo;
     let wh = (wi + v).normalize();
-    let f = mfd.f(v, wh);
 
-    albedo * ((1.0 - f) / crate::PI + util::reflect_coeff(wo, wi, mfd))
+    albedo * util::reflect_coeff(wo, wi, mfd)
 }
 
 pub fn conductor_sample(
