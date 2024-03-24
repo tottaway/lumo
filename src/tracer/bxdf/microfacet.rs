@@ -143,8 +143,10 @@ pub fn dielectric_f(
 
     let eta_ratio = if is_reflection {
         1.0
+    } else if cos_theta_v < 0.0 {
+        1.0 / mfd.eta()
     } else {
-        if cos_theta_v < 0.0 { 1.0 / mfd.eta() } else { mfd.eta() }
+        mfd.eta()
     };
 
     let wh = if mfd.is_delta() {
@@ -231,8 +233,10 @@ pub fn dielectric_pdf(
 
     let eta_ratio = if is_reflection {
         1.0
+    } else if v_inside {
+        1.0 / mfd.eta()
     } else {
-        if v_inside { 1.0 / mfd.eta() } else { mfd.eta() }
+        mfd.eta()
     };
 
     let wh = (v + wi * eta_ratio).normalize();
@@ -259,17 +263,17 @@ pub fn dielectric_pdf(
             mfd.sample_normal_pdf(wh, v) / (4.0 * wh_dot_v.abs())
                 * pr / (pr + pt)
         }
-    } else {
-        if mfd.is_delta() {
-            if 1.0 - wh.z < crate::EPSILON {
-                pt / (pr + pt)
-            } else {
-                0.0
-            }
+    } else if mfd.is_delta() {
+        // transmission with delta
+        if 1.0 - wh.z < crate::EPSILON {
+            pt / (pr + pt)
         } else {
-            mfd.sample_normal_pdf(wh, v)
-                * wh_dot_wi.abs() / (wh_dot_wi + wh_dot_v / eta_ratio).powi(2)
-                * pt / (pr + pt)
+            0.0
         }
+    } else {
+        // transmission with rough surface
+        mfd.sample_normal_pdf(wh, v)
+            * wh_dot_wi.abs() / (wh_dot_wi + wh_dot_v / eta_ratio).powi(2)
+            * pt / (pr + pt)
     }
 }
