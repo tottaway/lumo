@@ -9,12 +9,12 @@ pub enum BxDF {
     Lambertian,
     /// Perfect transmission, to be merged with MfDielectric
     Transmission(Float),
-    /// Perfect mirror, to be merged with MfReflection
+    /// Perfect mirror, to be merged with MfConductor
     Reflection,
     /// Disney diffuse
     MfDiffuse(MfDistribution),
     /// Microfacet mirror
-    MfReflection(MfDistribution),
+    MfConductor(MfDistribution),
     /// Microfacet glass
     MfDielectric(MfDistribution),
     None,
@@ -24,7 +24,7 @@ impl BxDF {
     pub fn is_specular(&self) -> bool {
         match self {
             Self::Reflection | Self::Transmission(_) | Self::MfDielectric(_) => true,
-            Self::MfReflection(mfd) => mfd.is_specular(),
+            Self::MfConductor(mfd) => mfd.is_specular(),
             _ => false,
         }
     }
@@ -44,7 +44,7 @@ impl BxDF {
     pub fn is_delta(&self) -> bool {
         match self {
             Self::Reflection | Self::Transmission(_) => true,
-            Self::MfReflection(mfd) | Self::MfDielectric(mfd) => mfd.is_delta(),
+            Self::MfConductor(mfd) | Self::MfDielectric(mfd) => mfd.is_delta(),
             _ => false,
         }
     }
@@ -61,7 +61,7 @@ impl BxDF {
             Self::Reflection => Color::WHITE,
             Self::Transmission(eta) => scatter::transmission_f(wo, *eta, mode),
             Self::MfDiffuse(mfd) => microfacet::diffuse_f(wo, wi, mfd, albedo),
-            Self::MfReflection(mfd) => microfacet::reflection_f(wo, wi, mfd, albedo),
+            Self::MfConductor(mfd) => microfacet::reflection_f(wo, wi, mfd, albedo),
             Self::MfDielectric(mfd) => microfacet::transmission_f(wo, wi, mfd, albedo, mode),
             Self::None => Color::BLACK,
         }
@@ -73,7 +73,7 @@ impl BxDF {
             Self::Lambertian => Some( rand_utils::square_to_cos_hemisphere(rand_sq) ),
             Self::Transmission(eta) => scatter::transmission_sample(wo, *eta),
             Self::MfDiffuse(_) => Some( rand_utils::square_to_cos_hemisphere(rand_sq) ),
-            Self::MfReflection(mfd) => microfacet::reflection_sample(wo, mfd, rand_sq),
+            Self::MfConductor(mfd) => microfacet::reflection_sample(wo, mfd, rand_sq),
             Self::MfDielectric(mfd) => microfacet::transmission_sample(wo, mfd, rand_sq),
             Self::None => None,
         }
@@ -84,7 +84,7 @@ impl BxDF {
             Self::Reflection | Self::Transmission(_) => 1.0,
             Self::Lambertian => scatter::lambertian_pdf(wi),
             Self::MfDiffuse(_) => scatter::lambertian_pdf(wi),
-            Self::MfReflection(mfd) => microfacet::reflection_pdf(wo, wi, mfd),
+            Self::MfConductor(mfd) => microfacet::reflection_pdf(wo, wi, mfd),
             Self::MfDielectric(mfd) => microfacet::transmission_pdf(wo, wi, mfd, swap_dir),
             Self::None => 0.0,
         }

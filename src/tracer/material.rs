@@ -33,7 +33,7 @@ impl Material {
         let bsdf = if is_transparent {
             BSDF::new(BxDF::MfDielectric(mfd))
         } else if fresnel_enabled {
-            BSDF::new(BxDF::MfReflection(mfd))
+            BSDF::new(BxDF::MfConductor(mfd))
         } else {
             BSDF::new(BxDF::MfDiffuse(mfd))
         };
@@ -45,7 +45,7 @@ impl Material {
         let eta = 2.5;
         let k = 0.0;
         let mfd = MfDistribution::new(roughness, eta, k, fresnel_enabled);
-        let bsdf = BSDF::new(BxDF::MfReflection(mfd));
+        let bsdf = BSDF::new(BxDF::MfConductor(mfd));
         Self::Microfacet(bsdf, texture, mfd)
     }
 
