@@ -148,7 +148,11 @@ pub fn dielectric_f(
         if cos_theta_v < 0.0 { 1.0 / mfd.eta() } else { mfd.eta() }
     };
 
-    let wh = (wi * eta_ratio + v).normalize();
+    let wh = if mfd.is_delta() {
+        Normal::Z
+    } else {
+        (wi * eta_ratio + v).normalize()
+    };
     let wh = if wh.z < 0.0 { -wh } else { wh };
 
     let wh_dot_v = wh.dot(v);
@@ -159,7 +163,11 @@ pub fn dielectric_f(
     let g = mfd.g(v, wi, wh);
 
     if is_reflection {
-        albedo * util::reflect_coeff(wo, wi, mfd)
+        if mfd.is_delta() {
+            albedo * f / cos_theta_wi.abs()
+        } else {
+            albedo * util::reflect_coeff(wo, wi, mfd)
+        }
     } else {
         // scale coefficient if transporting radiance
         let scale = match mode {
@@ -167,9 +175,13 @@ pub fn dielectric_f(
             Transport::Importance => 1.0,
         };
 
-        albedo * d * (1.0 - f) * g / scale
-            * (wh_dot_wi * wh_dot_v / (cos_theta_wi * cos_theta_v)).abs()
-            / (eta_ratio * wh_dot_wi + wh_dot_v).powi(2)
+        if mfd.is_delta() {
+            albedo * (1.0 - f) / (scale * cos_theta_wi.abs())
+        } else {
+            albedo * d * (1.0 - f) * g / scale
+                * (wh_dot_wi * wh_dot_v / (cos_theta_wi * cos_theta_v)).abs()
+                / (eta_ratio * wh_dot_wi + wh_dot_v).powi(2)
+        }
     }
 }
 
@@ -224,7 +236,11 @@ pub fn dielectric_pdf(
         if v_inside { 1.0 / mfd.eta() } else { mfd.eta() }
     };
 
-    let wh = (v + wi * eta_ratio).normalize();
+    let wh = if mfd.is_delta() {
+        Normal::Z
+    } else {
+        (v + wi * eta_ratio).normalize()
+    };
     let wh = if wh.z < 0.0 { -wh } else { wh };
     let wh_dot_v = v.dot(wh);
     let wh_dot_wi = wi.dot(wh);
@@ -238,10 +254,19 @@ pub fn dielectric_pdf(
     let pt = 1.0 - pr;
 
     if is_reflection {
-        mfd.sample_normal_pdf(wh, v) / (4.0 * wh_dot_v.abs())
-            * pr / (pr + pt)
+        if mfd.is_delta() {
+            pr / (pr + pt)
+        } else {
+            mfd.sample_normal_pdf(wh, v) / (4.0 * wh_dot_v.abs())
+                * pr / (pr + pt)
+        }
     } else {
-        mfd.sample_normal_pdf(wh, v) * wh_dot_wi.abs() / (wh_dot_wi + wh_dot_v / eta_ratio).powi(2)
-            * pt / (pr + pt)
+        if mfd.is_delta() {
+            pt / (pr + pt)
+        } else {
+            mfd.sample_normal_pdf(wh, v)
+                * wh_dot_wi.abs() / (wh_dot_wi + wh_dot_v / eta_ratio).powi(2)
+                * pt / (pr + pt)
+        }
     }
 }
