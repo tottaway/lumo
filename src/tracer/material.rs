@@ -105,8 +105,20 @@ impl Material {
     /// Perfect refraction
     pub fn glass(eta: Float) -> Self {
         assert!(eta >= 1.0);
-        let bsdf = BSDF::new(BxDF::Transmission(eta));
-        Self::Standard(bsdf, Texture::default())
+        let texture = Texture::Solid(Color::WHITE);
+        let roughness = 0.0;
+        let k = 0.0;
+        let is_transparent = true;
+        let fresnel_enabled = true;
+
+        Self::microfacet(
+            texture,
+            roughness,
+            eta,
+            k,
+            is_transparent,
+            fresnel_enabled,
+        )
     }
 
     /// Is the material specular? I.e. reflects light
