@@ -249,10 +249,18 @@ impl MfDistribution {
                 if cos2_theta < crate::EPSILON {
                     0.0
                 } else {
-                    let tan2_theta = (1.0 - cos2_theta) / cos2_theta;
-                    let roughness2 = cfg.roughness * cfg.roughness;
+                    let sin2_theta = 1.0 - cos2_theta;
+                    let tan2_theta = sin2_theta / cos2_theta;
+                    let sin_theta = sin2_theta.max(0.0).sqrt();
+                    let (cos_phi, sin_phi) = if sin_theta == 0.0 {
+                        (1.0, 0.0)
+                    } else {
+                        ((w.x / sin_theta).clamp(-1.0, 1.0), (w.y / sin_theta).clamp(-1.0, 1.0))
+                    };
+                    let alpha2 = (cfg.roughness * cos_phi).powi(2)
+                        + (cfg.roughness * sin_phi).powi(2);
 
-                    ((1.0 + roughness2 * tan2_theta).sqrt() - 1.0) / 2.0
+                    ((1.0 + alpha2 * tan2_theta).sqrt() - 1.0) / 2.0
                 }
             }
             Self::Beckmann(cfg) => {
@@ -306,30 +314,30 @@ impl MfDistribution {
 
                 let roughness = cfg.roughness;
                 // Map the GGX ellipsoid to a hemisphere
-                let v_stretch = Direction::new(
+                let v_stretch = Normal::new(
                     v.x * roughness,
                     v.y * roughness,
                     v.z
                 ).normalize();
+                if v_stretch.z < 0.0 { -v_stretch } else { v_stretch };
 
                 // ONB basis of the hemisphere configuration
-                let hemi_basis = Onb::new(v_stretch);
+                let u = if v_stretch.z < 0.9999 {
+                    v_stretch.cross(Normal::Z)
+                } else {
+                    Normal::X
+                };
+                let vv = v_stretch.cross(u);
+                let hemi_basis = Onb::new_from_basis(u, vv, v_stretch);
 
-                // compute a point on the disk
-                let a = 1.0 / (1.0 + v_stretch.z);
+                // first a point on the unit disk
                 let r = rand_sq.x.sqrt();
-                let phi = if rand_sq.y < a {
-                    crate::PI * rand_sq.y / a
-                } else {
-                    crate::PI + crate::PI * (rand_sq.y - a) / (1.0 - a)
-                };
-
-                let x = r * phi.cos();
-                let y = if rand_sq.y < a {
-                    r * phi.sin()
-                } else {
-                    r * phi.sin() * v_stretch.z
-                };
+                let theta = 2.0 * crate::PI * rand_sq.y;
+                let x = r * theta.cos();
+                // then map it to the projection disk
+                let h = (1.0 - x * x).sqrt();
+                let lerp = (1.0 + v_stretch.z) / 2.0;
+                let y = (1.0 - lerp) * h + lerp * r * theta.sin();
 
                 // compute normal in hemisphere configuration
                 let wm = Normal::new(
@@ -337,13 +345,13 @@ impl MfDistribution {
                     y,
                     (1.0 - x*x - y*y).max(0.0).sqrt(),
                 );
-                let wm = hemi_basis.to_world(wm);
 
                 // move back to ellipsoid
+                let wm = hemi_basis.to_world(wm);
                 Normal::new(
                     roughness * wm.x,
                     roughness * wm.y,
-                    wm.z.max(0.0)
+                    wm.z.max(1e-6)
                 ).normalize()
             }
             Self::Beckmann(cfg) => {
@@ -351,11 +359,12 @@ impl MfDistribution {
                 let theta = (-roughness2 * (1.0 - rand_sq.y).ln()).sqrt().atan();
                 let phi = 2.0 * crate::PI * rand_sq.x;
 
+                // already normalized?
                 Normal::new(
                     theta.sin() * phi.cos(),
                     theta.sin() * phi.sin(),
                     theta.cos(),
-                )
+                ).normalize()
             }
         }
     }
