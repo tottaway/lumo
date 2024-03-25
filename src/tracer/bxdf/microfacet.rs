@@ -98,12 +98,13 @@ pub fn conductor_pdf(
     }
 
     let wh = (v + wi).normalize();
+    let wh = if wh.z < 0.0 { -wh } else { wh };
 
     if mfd.is_delta() {
         if 1.0 - wh.z < crate::EPSILON { 1.0 } else { 0.0 }
     } else {
         let wh_dot_v = v.dot(wh);
-        mfd.sample_normal_pdf(wh, v) / (4.0 * wh_dot_v)
+        mfd.sample_normal_pdf(wh, v) / (4.0 * wh_dot_v.abs())
     }
 }
 
