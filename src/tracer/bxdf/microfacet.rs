@@ -80,7 +80,7 @@ pub fn conductor_sample(
     if mfd.is_delta() {
         Some( Direction::new(-v.x, -v.y, v.z) )
     } else {
-        let wh = mfd.sample_normal(v, rand_sq).normalize();
+        let wh = mfd.sample_normal(v, rand_sq);
         util::reflect(v, wh)
     }
 }
@@ -91,6 +91,12 @@ pub fn conductor_pdf(
     mfd: &MfDistribution,
 ) -> Float {
     let v = -wo;
+
+    // check if in same hemisphere or perpendicular to normal
+    if v.z * wi.z <= 0.0 {
+        return 0.0;
+    }
+
     let wh = (v + wi).normalize();
 
     if mfd.is_delta() {

@@ -117,6 +117,6 @@ fn do_sampling(bxdf: BxDF) -> Vec<Vec<Float>> {
             bins[i][j] *= (NUM_BINS * NUM_BINS) as Float / good_samples as Float;
         }
     }
-
+    println!("failed samples: {:.2} %", 100.0 * num_failed as Float / NUM_SAMPLES as Float);
     bins
 }

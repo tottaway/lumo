@@ -127,10 +127,20 @@ impl MfDistribution {
                 if cos2_theta < crate::EPSILON {
                     0.0
                 } else {
-                    let roughness2 = cfg.roughness * cfg.roughness;
+                    let sin2_theta = 1.0 - cos2_theta;
+                    let sin_theta = sin2_theta.max(0.0).sqrt();
+                    let tan2_theta = sin2_theta / cos2_theta;
+                    let cos4_theta = cos2_theta * cos2_theta;
 
-                    roughness2
-                        / (crate::PI * (1.0 - cos2_theta * (1.0 - roughness2)).powi(2))
+                    let (cos_phi, sin_phi) = if sin_theta == 0.0 {
+                        (1.0, 0.0)
+                    } else {
+                        ((wh.x / sin_theta).clamp(-1.0, 1.0), (wh.y / sin_theta).clamp(-1.0, 1.0))
+                    };
+                    let alpha = cfg.roughness;
+                    let e = tan2_theta * ((cos_phi / alpha).powi(2) + (sin_phi / alpha).powi(2));
+
+                    1.0 / (crate::PI * alpha * alpha * cos4_theta * (1.0 + e).powi(2))
                 }
             }
             Self::Beckmann(cfg) => {
