@@ -307,7 +307,7 @@ impl MfDistribution {
                 let wh_dot_v = wh.dot(v);
                 let cos_theta_v = v.z;
 
-                self.g1(v, wh) * self.d(wh) * wh_dot_v / cos_theta_v
+                self.g1(v, wh) * self.d(wh) * wh_dot_v.abs() / cos_theta_v.abs()
             }
         };
 

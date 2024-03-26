@@ -7,7 +7,7 @@ mod util {
     pub fn reflect(v: Direction, no: Normal) -> Option<Direction> {
         let wi = 2.0 * v.project_onto(no) - v;
         if wi.z * v.z <= 0.0 {
-            // bad sample, do something else?
+            // bad sample, in same hemisphere, do something else?
             None
         } else {
             Some( wi )
@@ -38,8 +38,8 @@ mod util {
         mfd: &MfDistribution,
     ) -> Float {
         let v = -wo;
-        let cos_theta_v = v.z.abs();
-        let cos_theta_wi = wi.z.abs();
+        let cos_theta_v = v.z;
+        let cos_theta_wi = wi.z;
         let wh = (wi + v).normalize();
 
         let d = mfd.d(wh);
@@ -47,7 +47,7 @@ mod util {
         let g = mfd.g(v, wi, wh);
 
         // need reflection color, its in the .mtl files somewhere
-        d * f * g / (4.0 * cos_theta_v * cos_theta_wi)
+        d * f * g / (4.0 * cos_theta_v.abs() * cos_theta_wi.abs())
     }
 
 }
@@ -64,7 +64,7 @@ pub fn conductor_f(
     let v = -wo;
     if mfd.is_delta() {
         let f = mfd.f(v, Normal::Z);
-        albedo * f / wi.z
+        albedo * f / wi.z.abs()
     } else {
         albedo * util::reflect_coeff(wo, wi, mfd)
     }
