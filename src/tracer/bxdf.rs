@@ -7,6 +7,9 @@ mod scatter;
 #[cfg(test)]
 mod bxdf_tests;
 
+#[cfg(test)]
+mod bxdf_chi2_tests;
+
 #[derive(Clone, Copy)]
 pub enum BxDF {
     Lambertian,
