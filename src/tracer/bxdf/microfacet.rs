@@ -6,7 +6,7 @@ mod util {
 
     pub fn reflect(v: Direction, no: Normal) -> Option<Direction> {
         let wi = 2.0 * v.project_onto(no) - v;
-        if wi.z <= 0.0 {
+        if wi.z * v.z <= 0.0 {
             // bad sample, do something else?
             None
         } else {

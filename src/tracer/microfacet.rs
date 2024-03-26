@@ -227,7 +227,7 @@ impl MfDistribution {
         // signum to fix refraction
         let cos_theta_wh = wh.z;
         let cos_theta_v = v.z;
-        let chi = cos_theta_wh.signum() * v.dot(wh) / cos_theta_v;
+        let chi = cos_theta_wh.signum() * v.dot(wh) * cos_theta_v;
         if chi < crate::EPSILON {
             0.0
         } else {
@@ -239,7 +239,7 @@ impl MfDistribution {
         // signum to fix refraction
         let cos_theta_wh = wh.z;
         let cos_theta_v = v.z;
-        let chi = cos_theta_wh.signum() * v.dot(wh) / cos_theta_v;
+        let chi = cos_theta_wh.signum() * v.dot(wh) * cos_theta_v;
         if chi < crate::EPSILON {
             0.0
         } else {
