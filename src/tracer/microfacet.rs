@@ -333,7 +333,7 @@ impl MfDistribution {
 
                 // ONB basis of the hemisphere configuration
                 let u = if v_stretch.z < 0.9999 {
-                    v_stretch.cross(Normal::Z)
+                    v_stretch.cross(Normal::Z).normalize()
                 } else {
                     Normal::X
                 };
