@@ -26,7 +26,37 @@ fn conductor50_chi2() {
     let mfd = mfd(0.5);
     let bxdf = BxDF::MfConductor(mfd);
     for _ in 0..CHI2_RUNS {
-        let wo = Direction::NEG_Z;
+        let wo = -rand_utils::square_to_cos_hemisphere(rand_utils::unit_square());
+        assert!(chi2_pass(wo, &bxdf));
+    }
+}
+
+#[test]
+fn conductor25_chi2() {
+    let mfd = mfd(0.25);
+    let bxdf = BxDF::MfConductor(mfd);
+    for _ in 0..CHI2_RUNS {
+        let wo = -rand_utils::square_to_cos_hemisphere(rand_utils::unit_square());
+        assert!(chi2_pass(wo, &bxdf));
+    }
+}
+
+#[test]
+fn dielectric50_chi2() {
+    let mfd = mfd(0.5);
+    let bxdf = BxDF::MfDielectric(mfd);
+    for _ in 0..CHI2_RUNS {
+        let wo = -rand_utils::square_to_cos_hemisphere(rand_utils::unit_square());
+        assert!(chi2_pass(wo, &bxdf));
+    }
+}
+
+#[test]
+fn dielectric25_chi2() {
+    let mfd = mfd(0.25);
+    let bxdf = BxDF::MfDielectric(mfd);
+    for _ in 0..CHI2_RUNS {
+        let wo = -rand_utils::square_to_cos_hemisphere(rand_utils::unit_square());
         assert!(chi2_pass(wo, &bxdf));
     }
 }
