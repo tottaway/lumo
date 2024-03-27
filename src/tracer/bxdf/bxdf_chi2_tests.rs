@@ -5,7 +5,7 @@ const NUM_SAMPLES: usize = 1_000_000;
 const THETA_BINS: usize = 64;
 const PHI_BINS: usize = 2 * THETA_BINS;
 const CHI2_RUNS: usize = 5;
-const CHI2_SLEVEL: Float = 0.0001;
+const CHI2_SLEVEL: Float = 0.05;
 const CHI2_MIN_FREQ: usize = 5;
 
 fn mfd(roughness: Float) -> MfDistribution {
@@ -19,7 +19,6 @@ fn lambertian_chi2() {
         let wo = -rand_utils::square_to_cos_hemisphere(rand_utils::unit_square());
         assert!(chi2_pass(wo, &bxdf));
     }
-    assert!(false);
 }
 
 #[test]
@@ -30,7 +29,6 @@ fn conductor50_chi2() {
         let wo = Direction::NEG_Z;
         assert!(chi2_pass(wo, &bxdf));
     }
-    assert!(false);
 }
 
 fn chi2_pass(wo: Direction, bxdf: &BxDF) -> bool {
@@ -77,9 +75,7 @@ fn chi2_pass(wo: Direction, bxdf: &BxDF) -> bool {
     let chi2 = ChiSquared::new(dof as Float).unwrap();
     let pval = 1.0 - chi2.cdf(stat);
 
-    let alpha = 1.0 - CHI2_SLEVEL;
-    println!("{} {}", pval, stat);
-    pval < alpha
+    pval < CHI2_SLEVEL
 }
 
 fn sample_frequencies(wo: Direction, bxdf: &BxDF) -> [usize; THETA_BINS*PHI_BINS] {
