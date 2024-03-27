@@ -136,15 +136,6 @@ fn compute_frequencies(wo: Direction, bxdf: &BxDF) -> [usize; THETA_BINS*PHI_BIN
     return samples;
 }
 
-fn simpson2d<F>(f: F, x0: Float, y0: Float, x1: Float, y1: Float) -> Float where
-    F: Fn(Float, Float) -> Float {
-    let g = |y: Float| {
-        let h = |x: Float| f(x, y);
-        simpson(h, x0, x1)
-    };
-    simpson(g, y0, y1)
-}
-
 struct SimpsonIteration {
     a: Float,
     b: Float,
@@ -159,6 +150,15 @@ impl SimpsonIteration {
     pub fn new(a: Float, b: Float, c: Float, fa: Float, fb: Float, fc: Float, integrand: Float) -> Self {
         Self { a, b, c, fa, fb, fc, integrand }
     }
+}
+
+fn simpson2d<F>(f: F, x0: Float, y0: Float, x1: Float, y1: Float) -> Float where
+    F: Fn(Float, Float) -> Float {
+    let g = |y: Float| {
+        let h = |x: Float| f(x, y);
+        simpson(h, x0, x1)
+    };
+    simpson(g, y0, y1)
 }
 
 fn simpson<F>(f: F, x0: Float, x1: Float) -> Float where
