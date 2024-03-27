@@ -89,8 +89,8 @@ fn sample_frequencies(wo: Direction, bxdf: &BxDF) -> [usize; THETA_BINS*PHI_BINS
 fn compute_frequencies(wo: Direction, bxdf: &BxDF) -> [usize; THETA_BINS*PHI_BINS] {
     let mut samples = [0; THETA_BINS*PHI_BINS];
 
-    let theta_factor = THETA_BINS as Float / crate::PI;
-    let phi_factor = PHI_BINS as Float / (2.0 * crate::PI);
+    let theta_factor = crate::PI / THETA_BINS as Float;
+    let phi_factor = (2.0 * crate::PI) / PHI_BINS as Float;
 
     for theta_bin in 0..THETA_BINS {
         let theta0 = theta_bin as Float * theta_factor;
