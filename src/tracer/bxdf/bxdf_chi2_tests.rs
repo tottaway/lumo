@@ -16,7 +16,7 @@ fn mfd(roughness: Float) -> MfDistribution {
 fn lambertian_chi2() {
     let bxdf = BxDF::Lambertian;
     for _ in 0..CHI2_RUNS {
-        let wo = Direction::NEG_Z;
+        let wo = -rand_utils::square_to_cos_hemisphere(rand_utils::unit_square());
         assert!(chi2_pass(wo, &bxdf));
     }
     assert!(false);
