@@ -6,6 +6,7 @@ const THETA_BINS: usize = 64;
 const PHI_BINS: usize = 2 * THETA_BINS;
 const CHI2_RUNS: usize = 5;
 const CHI2_SLEVEL: Float = 0.0001;
+const CHI2_MIN_FREQ: usize = 5;
 
 fn mfd(roughness: Float) -> MfDistribution {
     MfDistribution::new(roughness, 1.0, 0.0, true)
@@ -41,13 +42,32 @@ fn chi2_pass(wo: Direction, bxdf: &BxDF) -> bool {
     // test statistic = sum_i (O_i - E_i)^2 / E_i
     let mut stat = 0.0;
 
+    let mut pooled_samples = 0;
+    let mut pooled_computed = 0;
+
     for phi_bin in 0..PHI_BINS {
         for theta_bin in 0..THETA_BINS {
             let idx = phi_bin + theta_bin * PHI_BINS;
-            let delta = actual_freq[idx] as Float - expected_freq[idx] as Float;
-            stat += (delta * delta) / expected_freq[idx] as Float;
-            dof += 1;
+
+            if expected_freq[idx] < CHI2_MIN_FREQ {
+                pooled_samples += actual_freq[idx];
+                pooled_computed += expected_freq[idx];
+            } else if pooled_computed < CHI2_MIN_FREQ {
+                // make sure the pooled is high enough
+                pooled_samples += actual_freq[idx];
+                pooled_computed += expected_freq[idx];
+            } else {
+                let delta = actual_freq[idx] as Float - expected_freq[idx] as Float;
+                stat += (delta * delta) / expected_freq[idx] as Float;
+                dof += 1;
+            }
         }
+    }
+
+    if pooled_samples + pooled_computed > 0 {
+        let delta = pooled_samples as Float - pooled_computed as Float;
+        stat += (delta * delta) / pooled_computed as Float;
+        dof += 1;
     }
 
     // blaa blaa i dont know
