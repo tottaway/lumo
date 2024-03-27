@@ -101,11 +101,16 @@ fn chi2_pass(wo: Direction, bxdf: &BxDF) -> bool {
     // blaa blaa i dont know
     dof -= 1;
 
-    // todo: code the CDF, should be simple but boring
-    let chi2 = ChiSquared::new(dof as Float).unwrap();
-    let pval = 1.0 - chi2.cdf(stat);
+    if dof <= 0 {
+        println!("Got 0 DoF!");
+        false
+    } else {
+        // todo: code the CDF, should be simple but boring
+        let chi2 = ChiSquared::new(dof as Float).unwrap();
+        let pval = 1.0 - chi2.cdf(stat);
 
-    pval < CHI2_SLEVEL
+        pval < CHI2_SLEVEL
+    }
 }
 
 fn sample_frequencies(wo: Direction, bxdf: &BxDF) -> [usize; THETA_BINS*PHI_BINS] {
