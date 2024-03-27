@@ -38,7 +38,7 @@ fn chi2_pass(wo: Direction, bxdf: &BxDF) -> bool {
 
     // degrees of freedom
     let mut dof = 0;
-    // test statistic = sum_i (O_i - D_i)^2 / D_i
+    // test statistic = sum_i (O_i - E_i)^2 / E_i
     let mut stat = 0.0;
 
     for phi_bin in 0..PHI_BINS {
