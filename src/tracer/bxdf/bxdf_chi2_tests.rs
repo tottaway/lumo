@@ -122,9 +122,10 @@ fn compute_frequencies(wo: Direction, bxdf: &BxDF) -> [usize; THETA_BINS*PHI_BIN
                 let wi = Direction::new(
                     theta.sin() * phi.cos(),
                     theta.sin() * phi.sin(),
-                    theta.sin(),
+                    theta.cos(),
                 );
-                bxdf.pdf(wo, wi, false)
+                // pdf in solid angle, change to spherical coordinates
+                bxdf.pdf(wo, wi, false) * theta.sin()
             };
             let integral = simpson2d(f, theta0, phi0, theta1, phi1);
             samples[phi_bin + theta_bin * PHI_BINS] = (integral * NUM_SAMPLES as Float) as usize;
