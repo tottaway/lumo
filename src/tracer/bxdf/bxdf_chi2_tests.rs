@@ -108,7 +108,7 @@ fn sample_frequencies(wo: Direction, bxdf: &BxDF) -> [usize; THETA_BINS*PHI_BINS
 
 fn compute_frequencies(wo: Direction, bxdf: &BxDF) -> [usize; THETA_BINS*PHI_BINS] {
     let mut samples = [0; THETA_BINS*PHI_BINS];
-
+    let mut ig = 0.0;
     let theta_factor = crate::PI / THETA_BINS as Float;
     let phi_factor = (2.0 * crate::PI) / PHI_BINS as Float;
 
@@ -128,10 +128,11 @@ fn compute_frequencies(wo: Direction, bxdf: &BxDF) -> [usize; THETA_BINS*PHI_BIN
                 bxdf.pdf(wo, wi, false) * theta.sin()
             };
             let integral = simpson2d(f, theta0, phi0, theta1, phi1);
+            ig += integral;
             samples[phi_bin + theta_bin * PHI_BINS] = (integral * NUM_SAMPLES as Float) as usize;
         }
     }
-
+    println!("integral: {}", ig);
     return samples;
 }
 
