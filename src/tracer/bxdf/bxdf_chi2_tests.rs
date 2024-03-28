@@ -9,7 +9,7 @@ const CHI2_SLEVEL: Float = 0.05;
 const CHI2_MIN_FREQ: Float = 5.0;
 
 fn mfd(roughness: Float) -> MfDistribution {
-    MfDistribution::new(roughness, 1.0, 0.0, true)
+    MfDistribution::new(roughness, 1.5, 0.0, true)
 }
 
 #[test]
