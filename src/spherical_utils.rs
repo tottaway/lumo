@@ -1,7 +1,13 @@
+#![allow(dead_code)]
 use crate::{ Direction, Float };
 
 #[cfg(test)]
 mod spherical_utils_tests;
+
+/// Are `u` and `v` in the same hemisphere, assuming Z is the normal.
+pub fn same_hemisphere(v: Direction, u: Direction) -> bool {
+    cos_theta(v) * cos_theta(u) > 0.0
+}
 
 pub fn phi(w: Direction) -> Float {
     let phi = w.y.atan2(w.x);
