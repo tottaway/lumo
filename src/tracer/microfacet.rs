@@ -208,12 +208,12 @@ impl MfDistribution {
         (r_par * r_par + r_per * r_per) / 2.0
     }
 
-    fn chi(&self, v: Direction, wh: Normal) -> bool {
+    fn chi_pass(&self, v: Direction, wh: Normal) -> bool {
         // signum to fix refraction
         let cos_theta_wh = spherical_utils::cos_theta(wh);
         let cos_theta_v = spherical_utils::cos_theta(v);
         let chi = cos_theta_wh.signum() * v.dot(wh) * cos_theta_v;
-        chi < crate::EPSILON
+        chi > crate::EPSILON
     }
 
 
@@ -226,7 +226,7 @@ impl MfDistribution {
     /// * `wi` - Direction of ray away from the point of impact in shading space
     /// * `wh` - Microsurface normal in shading space
     pub fn g(&self, v: Direction, wi: Direction, wh: Normal) -> Float {
-        if !self.chi(v, wh) {
+        if !self.chi_pass(v, wh) {
             0.0
         } else {
             1.0 / (1.0 + self.lambda(v) + self.lambda(wi))
@@ -234,7 +234,7 @@ impl MfDistribution {
     }
 
     pub fn g1(&self, v: Direction, wh: Normal) -> Float {
-        if !self.chi(v, wh) {
+        if !self.chi_pass(v, wh) {
             0.0
         } else {
             1.0 / (1.0 + self.lambda(v))
@@ -260,7 +260,7 @@ impl MfDistribution {
                     let alpha2 = (cfg.roughness * cos_phi).powi(2)
                         + (cfg.roughness * sin_phi).powi(2);
 
-                    ((1.0 + alpha2 * tan2_theta).sqrt() - 1.0) / 2.0
+                    ((1.0 + alpha2 * tan2_theta).max(0.0).sqrt() - 1.0) / 2.0
                 }
             }
             Self::Beckmann(cfg) => {
