@@ -26,6 +26,8 @@ mod rand_utils;
 mod renderer;
 /// Different iterators that stream values sampled from the unit square.
 mod samplers;
+/// Trigonometric functions for vectors in shading space
+mod spherical_utils;
 /// Tone mapping functions
 mod tone_mapping;
 
