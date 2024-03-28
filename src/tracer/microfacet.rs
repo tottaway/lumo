@@ -1,5 +1,5 @@
 use crate::tracer::onb::Onb;
-use crate::{ Normal, Direction, Float, Vec2 };
+use crate::{ Normal, Direction, Float, Vec2, spherical_utils };
 use num::complex::Complex;
 
 /// Configurable parameters for a microsurface
@@ -122,21 +122,15 @@ impl MfDistribution {
     pub fn d(&self, wh: Normal) -> Float {
         match self {
             Self::Ggx(cfg) => {
-                let cos2_theta = wh.z.powi(2);
+                let tan2_theta = spherical_utils::tan2_theta(wh);
 
-                if cos2_theta < crate::EPSILON {
+                if tan2_theta.is_nan() {
                     0.0
                 } else {
-                    let sin2_theta = 1.0 - cos2_theta;
-                    let sin_theta = sin2_theta.max(0.0).sqrt();
-                    let tan2_theta = sin2_theta / cos2_theta;
-                    let cos4_theta = cos2_theta * cos2_theta;
+                    let cos4_theta = spherical_utils::cos2_theta(wh).powi(2);
+                    let cos_phi = spherical_utils::cos_phi(wh);
+                    let sin_phi = spherical_utils::sin_phi(wh);
 
-                    let (cos_phi, sin_phi) = if sin_theta == 0.0 {
-                        (1.0, 0.0)
-                    } else {
-                        ((wh.x / sin_theta).clamp(-1.0, 1.0), (wh.y / sin_theta).clamp(-1.0, 1.0))
-                    };
                     let alpha = cfg.roughness;
                     let e = tan2_theta * ((cos_phi / alpha).powi(2) + (sin_phi / alpha).powi(2));
 
@@ -144,16 +138,16 @@ impl MfDistribution {
                 }
             }
             Self::Beckmann(cfg) => {
-                let cos2_theta = wh.z.powi(2);
+                let tan2_theta = spherical_utils::tan2_theta(wh);
 
-                if cos2_theta < crate::EPSILON {
+                if tan2_theta.is_nan() {
                     0.0
                 } else {
                     let roughness2 = cfg.roughness * cfg.roughness;
-                    let tan2_theta = (1.0 - cos2_theta) / cos2_theta;
+                    let cos4_theta = spherical_utils::cos2_theta(wh).powi(2);
 
                     (-tan2_theta / roughness2).exp()
-                        / (crate::PI * roughness2 * cos2_theta.powi(2))
+                        / (crate::PI * roughness2 * cos4_theta)
                 }
             }
         }
@@ -214,6 +208,14 @@ impl MfDistribution {
         (r_par * r_par + r_per * r_per) / 2.0
     }
 
+    fn chi(&self, v: Direction, wh: Normal) -> bool {
+        // signum to fix refraction
+        let cos_theta_wh = spherical_utils::cos_theta(wh);
+        let cos_theta_v = spherical_utils::cos_theta(v);
+        let chi = cos_theta_wh.signum() * v.dot(wh) * cos_theta_v;
+        chi < crate::EPSILON
+    }
+
 
     /// Shadow-masking term. Used to make sure that only microfacets that are
     /// visible from `v` direction are considered. Uses the method described
@@ -224,11 +226,7 @@ impl MfDistribution {
     /// * `wi` - Direction of ray away from the point of impact in shading space
     /// * `wh` - Microsurface normal in shading space
     pub fn g(&self, v: Direction, wi: Direction, wh: Normal) -> Float {
-        // signum to fix refraction
-        let cos_theta_wh = wh.z;
-        let cos_theta_v = v.z;
-        let chi = cos_theta_wh.signum() * v.dot(wh) * cos_theta_v;
-        if chi < crate::EPSILON {
+        if !self.chi(v, wh) {
             0.0
         } else {
             1.0 / (1.0 + self.lambda(v) + self.lambda(wi))
@@ -236,11 +234,7 @@ impl MfDistribution {
     }
 
     pub fn g1(&self, v: Direction, wh: Normal) -> Float {
-        // signum to fix refraction
-        let cos_theta_wh = wh.z;
-        let cos_theta_v = v.z;
-        let chi = cos_theta_wh.signum() * v.dot(wh) * cos_theta_v;
-        if chi < crate::EPSILON {
+        if !self.chi(v, wh) {
             0.0
         } else {
             1.0 / (1.0 + self.lambda(v))
@@ -255,18 +249,14 @@ impl MfDistribution {
     fn lambda(&self, w: Direction) -> Float {
         match self {
             Self::Ggx(cfg) => {
-                let cos2_theta = w.z.powi(2);
-                if cos2_theta < crate::EPSILON {
+                let tan2_theta = spherical_utils::tan2_theta(w);
+
+                if tan2_theta.is_nan() {
                     0.0
                 } else {
-                    let sin2_theta = 1.0 - cos2_theta;
-                    let tan2_theta = sin2_theta / cos2_theta;
-                    let sin_theta = sin2_theta.max(0.0).sqrt();
-                    let (cos_phi, sin_phi) = if sin_theta == 0.0 {
-                        (1.0, 0.0)
-                    } else {
-                        ((w.x / sin_theta).clamp(-1.0, 1.0), (w.y / sin_theta).clamp(-1.0, 1.0))
-                    };
+                    let cos_phi = spherical_utils::cos_phi(w);
+                    let sin_phi = spherical_utils::sin_phi(w);
+
                     let alpha2 = (cfg.roughness * cos_phi).powi(2)
                         + (cfg.roughness * sin_phi).powi(2);
 
@@ -274,11 +264,10 @@ impl MfDistribution {
                 }
             }
             Self::Beckmann(cfg) => {
-                let cos2_theta = w.z.powi(2);
-                if cos2_theta < crate::EPSILON {
+                let tan2_theta = spherical_utils::tan2_theta(w);
+                if tan2_theta.is_nan() {
                     0.0
                 } else {
-                    let tan2_theta = ((1.0 - cos2_theta) / cos2_theta).abs();
                     let a = 1.0 / (cfg.roughness * tan2_theta);
 
                     if a >= 1.6 {
@@ -300,12 +289,12 @@ impl MfDistribution {
     ) -> Float {
         let pdf = match self {
             Self::Beckmann(..) => {
-                let cos_theta_wh = wh.z;
+                let cos_theta_wh = spherical_utils::cos_theta(wh);
                 self.d(wh) * cos_theta_wh
             }
             Self::Ggx(..) => {
                 let wh_dot_v = wh.dot(v);
-                let cos_theta_v = v.z;
+                let cos_theta_v = spherical_utils::cos_theta(v);
 
                 self.g1(v, wh) * self.d(wh) * wh_dot_v.abs() / cos_theta_v.abs()
             }
