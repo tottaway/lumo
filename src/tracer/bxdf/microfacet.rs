@@ -1,4 +1,5 @@
 use super::*;
+use crate::spherical_utils;
 
 /* util functions */
 mod util {
@@ -6,8 +7,8 @@ mod util {
 
     pub fn reflect(v: Direction, no: Normal) -> Option<Direction> {
         let wi = 2.0 * v.project_onto(no) - v;
-        if wi.z * v.z <= 0.0 {
-            // bad sample, in same hemisphere, do something else?
+        if !spherical_utils::same_hemisphere(wi, v) {
+            // bad sample, do something else?
             None
         } else {
             Some( wi )
@@ -93,7 +94,7 @@ pub fn conductor_pdf(
     let v = -wo;
 
     // check if in same hemisphere or perpendicular to normal
-    if v.z * wi.z <= 0.0 {
+    if !spherical_utils::same_hemisphere(wi, v) {
         return 0.0;
     }
 
@@ -144,8 +145,8 @@ pub fn dielectric_f(
 ) -> Color {
     let v = -wo;
 
-    let cos_theta_v = v.z;
-    let cos_theta_wi = wi.z;
+    let cos_theta_v = spherical_utils::cos_theta(v);
+    let cos_theta_wi = spherical_utils::cos_theta(wi);
     let is_reflection = cos_theta_v * cos_theta_wi > 0.0;
 
     let eta_ratio = if is_reflection {
