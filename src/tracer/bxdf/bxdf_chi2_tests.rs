@@ -116,6 +116,9 @@ fn chi2_pass(wo: Direction, bxdf: &BxDF) -> bool {
 fn sample_frequencies(wo: Direction, bxdf: &BxDF) -> [usize; THETA_BINS*PHI_BINS] {
     let mut samples = [0; THETA_BINS*PHI_BINS];
 
+    let theta_factor = THETA_BINS as Float / crate::PI;
+    let phi_factor = PHI_BINS as Float / (2.0 * crate::PI);
+
     for _ in 0..NUM_SAMPLES {
         match bxdf.sample(wo, rand_utils::unit_square()) {
             None => (),
@@ -124,10 +127,8 @@ fn sample_frequencies(wo: Direction, bxdf: &BxDF) -> [usize; THETA_BINS*PHI_BINS
                 let phi = wi.y.atan2(wi.x);
                 let phi = if phi < 0.0 { phi + 2.0 * crate::PI } else { phi };
 
-                let theta_bin = theta * THETA_BINS as Float / crate::PI;
-                let theta_bin = (theta_bin as usize).max(0).min(THETA_BINS - 1);
-                let phi_bin = phi * PHI_BINS as Float / (2.0 * crate::PI);
-                let phi_bin = (phi_bin as usize).max(0).min(PHI_BINS - 1);
+                let theta_bin = ((theta * theta_factor) as usize).max(0).min(THETA_BINS - 1);
+                let phi_bin = ((phi * phi_factor) as usize).max(0).min(PHI_BINS - 1);
 
                 samples[phi_bin + theta_bin * PHI_BINS] += 1;
             }
