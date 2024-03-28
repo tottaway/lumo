@@ -6,7 +6,7 @@ const THETA_BINS: usize = 64;
 const PHI_BINS: usize = 2 * THETA_BINS;
 const CHI2_RUNS: usize = 5;
 const CHI2_SLEVEL: Float = 0.05;
-const CHI2_MIN_FREQ: usize = 5;
+const CHI2_MIN_FREQ: Float = 5.0;
 
 fn mfd(roughness: Float) -> MfDistribution {
     MfDistribution::new(roughness, 1.0, 0.0, true)
@@ -71,7 +71,7 @@ fn chi2_pass(wo: Direction, bxdf: &BxDF) -> bool {
     let mut stat = 0.0;
 
     let mut pooled_samples = 0;
-    let mut pooled_computed = 0;
+    let mut pooled_computed = 0.0;
 
     for phi_bin in 0..PHI_BINS {
         for theta_bin in 0..THETA_BINS {
@@ -85,15 +85,15 @@ fn chi2_pass(wo: Direction, bxdf: &BxDF) -> bool {
                 pooled_samples += actual_freq[idx];
                 pooled_computed += expected_freq[idx];
             } else {
-                let delta = actual_freq[idx] as Float - expected_freq[idx] as Float;
-                stat += (delta * delta) / expected_freq[idx] as Float;
+                let delta = actual_freq[idx] as Float - expected_freq[idx];
+                stat += (delta * delta) / expected_freq[idx];
                 dof += 1;
             }
         }
     }
 
-    if pooled_samples + pooled_computed > 0 {
-        let delta = pooled_samples as Float - pooled_computed as Float;
+    if pooled_samples + pooled_computed as usize > 0 {
+        let delta = pooled_samples as Float - pooled_computed;
         stat += (delta * delta) / pooled_computed as Float;
         dof += 1;
     }
@@ -137,8 +137,8 @@ fn sample_frequencies(wo: Direction, bxdf: &BxDF) -> [usize; THETA_BINS*PHI_BINS
     return samples;
 }
 
-fn compute_frequencies(wo: Direction, bxdf: &BxDF) -> [usize; THETA_BINS*PHI_BINS] {
-    let mut samples = [0; THETA_BINS*PHI_BINS];
+fn compute_frequencies(wo: Direction, bxdf: &BxDF) -> [Float; THETA_BINS*PHI_BINS] {
+    let mut samples = [0.0; THETA_BINS*PHI_BINS];
     let mut ig = 0.0;
     let theta_factor = crate::PI / THETA_BINS as Float;
     let phi_factor = (2.0 * crate::PI) / PHI_BINS as Float;
@@ -160,7 +160,7 @@ fn compute_frequencies(wo: Direction, bxdf: &BxDF) -> [usize; THETA_BINS*PHI_BIN
             };
             let integral = simpson2d(f, theta0, phi0, theta1, phi1);
             ig += integral;
-            samples[phi_bin + theta_bin * PHI_BINS] = (integral * NUM_SAMPLES as Float) as usize;
+            samples[phi_bin + theta_bin * PHI_BINS] = integral * NUM_SAMPLES as Float;
         }
     }
     println!("integral: {}", ig);
