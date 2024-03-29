@@ -1,5 +1,4 @@
 use super::*;
-use crate::spherical_utils;
 
 /* util functions */
 mod util {

@@ -1,4 +1,4 @@
-use crate::{ Direction, Normal, Transport, Float, Vec2, rand_utils };
+use crate::{ Direction, Normal, Transport, Float, Vec2, rand_utils, spherical_utils };
 use crate::tracer::{ Color, microfacet::MfDistribution };
 
 mod microfacet;
