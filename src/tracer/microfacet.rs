@@ -131,10 +131,10 @@ impl MfDistribution {
                     let cos_phi = spherical_utils::cos_phi(wh);
                     let sin_phi = spherical_utils::sin_phi(wh);
 
-                    let alpha = cfg.roughness;
-                    let e = tan2_theta * ((cos_phi / alpha).powi(2) + (sin_phi / alpha).powi(2));
+                    let alpha2 = (cfg.roughness * cos_phi).powi(2)
+                        + (cfg.roughness * sin_phi).powi(2);
 
-                    1.0 / (crate::PI * alpha * alpha * cos4_theta * (1.0 + e).powi(2))
+                    alpha2 / (crate::PI * cos4_theta * (alpha2 + tan2_theta).powi(2))
                 }
             }
             Self::Beckmann(cfg) => {
