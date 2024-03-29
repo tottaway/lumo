@@ -128,6 +128,9 @@ impl MfDistribution {
                     0.0
                 } else {
                     let cos4_theta = spherical_utils::cos2_theta(wh).powi(2);
+                    if cos4_theta < crate::EPSILON {
+                        return 0.0;
+                    }
                     let cos_phi = spherical_utils::cos_phi(wh);
                     let sin_phi = spherical_utils::sin_phi(wh);
 
