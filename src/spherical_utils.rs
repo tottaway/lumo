@@ -37,13 +37,7 @@ pub fn sin_theta(w: Direction) -> Float {
 }
 
 pub fn tan_theta(w: Direction) -> Float {
-    let cos = cos_theta(w);
-
-    if cos < crate::EPSILON {
-        Float::NAN
-    } else {
-        sin_theta(w) / cos_theta(w)
-    }
+    sin_theta(w) / cos_theta(w)
 }
 
 pub fn cos2_theta(w: Direction) -> Float {
@@ -55,11 +49,5 @@ pub fn sin2_theta(w: Direction) -> Float {
 }
 
 pub fn tan2_theta(w: Direction) -> Float {
-    let cos2 = cos2_theta(w);
-
-    if cos2 < crate::EPSILON {
-        Float::NAN
-    } else {
-        sin2_theta(w) / cos2_theta(w)
-    }
+    sin2_theta(w) / cos2_theta(w)
 }

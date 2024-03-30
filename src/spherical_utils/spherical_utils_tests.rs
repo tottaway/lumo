@@ -62,10 +62,10 @@ fn tan_theta_test() {
 }
 
 #[test]
-fn tan_nan_theta_test() {
-    assert!(tan_theta(Direction::X).is_nan());
-    assert!(tan_theta(Direction::Y).is_nan());
-    assert!(tan_theta(Direction::splat(0.999 * crate::EPSILON)).is_nan());
+fn tan_theta_infinite_test() {
+    assert!(tan_theta(Direction::X).is_infinite());
+    assert!(tan_theta(Direction::Y).is_infinite());
+    assert!(tan_theta(Direction::new(1.0, 1.0, Float::MIN).normalize()).is_infinite());
 }
 
 #[test]
@@ -79,8 +79,8 @@ fn tan2_theta_test() {
 }
 
 #[test]
-fn tan2_nan_theta_test() {
-    assert!(tan2_theta(Direction::X).is_nan());
-    assert!(tan2_theta(Direction::Y).is_nan());
-    assert!(tan2_theta(Direction::splat(0.999 * crate::EPSILON.sqrt())).is_nan());
+fn tan2_theta_infinite_test() {
+    assert!(tan2_theta(Direction::X).is_infinite());
+    assert!(tan2_theta(Direction::Y).is_infinite());
+    assert!(tan2_theta(Direction::new(1.0, 1.0, Float::MIN).normalize()).is_infinite());
 }

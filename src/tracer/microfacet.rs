@@ -124,7 +124,7 @@ impl MfDistribution {
             Self::Ggx(cfg) => {
                 let tan2_theta = spherical_utils::tan2_theta(wh);
 
-                if tan2_theta.is_nan() {
+                if tan2_theta.is_infinite() {
                     0.0
                 } else {
                     let cos4_theta = spherical_utils::cos2_theta(wh).powi(2);
@@ -143,7 +143,7 @@ impl MfDistribution {
             Self::Beckmann(cfg) => {
                 let tan2_theta = spherical_utils::tan2_theta(wh);
 
-                if tan2_theta.is_nan() {
+                if tan2_theta.is_infinite() {
                     0.0
                 } else {
                     let roughness2 = cfg.roughness * cfg.roughness;
@@ -254,7 +254,7 @@ impl MfDistribution {
             Self::Ggx(cfg) => {
                 let tan2_theta = spherical_utils::tan2_theta(w);
 
-                if tan2_theta.is_nan() {
+                if tan2_theta.is_infinite() {
                     0.0
                 } else {
                     let cos_phi = spherical_utils::cos_phi(w);
@@ -268,7 +268,7 @@ impl MfDistribution {
             }
             Self::Beckmann(cfg) => {
                 let tan2_theta = spherical_utils::tan2_theta(w);
-                if tan2_theta.is_nan() {
+                if tan2_theta.is_infinite() {
                     0.0
                 } else {
                     let a = 1.0 / (cfg.roughness * tan2_theta);
