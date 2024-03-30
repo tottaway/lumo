@@ -1,4 +1,3 @@
-use crate::tracer::onb::Onb;
 use crate::{ Normal, Direction, Float, Vec2, spherical_utils };
 use num::complex::Complex;
 
@@ -325,14 +324,14 @@ impl MfDistribution {
                 if v_stretch.z < 0.0 { -v_stretch } else { v_stretch };
 
                 // ONB basis of the hemisphere configuration
+                // don't use Onb class, as it has too strict requirements for orthonormality
                 // first vector should be perpendicular to Z
-                let u = if v_stretch.z < 0.999 {
+                let u = if v_stretch.z < 0.99999 {
                     v_stretch.cross(Normal::Z).normalize()
                 } else {
                     Normal::X
                 };
                 let vv = u.cross(v_stretch);
-                let hemi_basis = Onb::new_from_basis(u, vv, v_stretch);
 
                 // first a point on the unit disk
                 let r = rand_sq.x.sqrt();
@@ -351,7 +350,7 @@ impl MfDistribution {
                 );
 
                 // move back to ellipsoid
-                let wm = hemi_basis.to_world(wm);
+                let wm = wm.x * u + wm.y * vv + wm.z * v_stretch;
                 Normal::new(
                     roughness.x * wm.x,
                     roughness.y * wm.y,
