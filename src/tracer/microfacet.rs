@@ -6,7 +6,7 @@ use num::complex::Complex;
 #[derive(Copy, Clone)]
 pub struct MicrofacetConfig {
     /// Roughness of the surface (α) [0,1]
-    pub roughness: Float,
+    pub roughness: Vec2,
     /// Refraction index of the material >= 1.0
     pub eta: Float,
     /// Absoprtion coefficient
@@ -27,7 +27,7 @@ impl MicrofacetConfig {
         assert!(eta >= 1.0);
 
         Self {
-            roughness: roughness.max(1e-5),
+            roughness: Vec2::splat(roughness.max(1e-5)),
             eta,
             k,
             fresnel_enabled,
@@ -57,12 +57,14 @@ impl MfDistribution {
 
     /// might need tuning, send ratio that emittance is multiplied with?
     pub fn is_specular(&self) -> bool {
-        self.get_config().roughness < 0.01
+        let roughness = self.roughness();
+        (roughness.x + roughness.y) / 2.0 < 0.01
     }
 
     /// Does the material have delta scattering distribution?
     pub fn is_delta(&self) -> bool {
-        self.get_config().roughness < 1e-3
+        let roughness = self.roughness();
+        (roughness.x + roughness.y) / 2.0 < 1e-3
     }
 
     /// Get refraction index from config
@@ -76,7 +78,7 @@ impl MfDistribution {
     }
 
     /// Get roughness from config
-    pub fn roughness(&self) -> Float {
+    pub fn roughness(&self) -> Vec2 {
         self.get_config().roughness
     }
 
@@ -99,7 +101,7 @@ impl MfDistribution {
         cos_theta_wh: Float,
         cos_theta_wi: Float
     ) -> Float {
-        let roughness2 = self.roughness().powi(2);
+        let roughness2 = self.roughness().x.powi(2);
         let energy_bias = 0.5 * roughness2;
         let fd90 = energy_bias + 2.0 * cos_theta_wh.powi(2) * roughness2;
 
@@ -134,8 +136,8 @@ impl MfDistribution {
                     let cos_phi = spherical_utils::cos_phi(wh);
                     let sin_phi = spherical_utils::sin_phi(wh);
 
-                    let alpha2 = (cfg.roughness * cos_phi).powi(2)
-                        + (cfg.roughness * sin_phi).powi(2);
+                    let alpha2 = (cfg.roughness.x * cos_phi).powi(2)
+                        + (cfg.roughness.y * sin_phi).powi(2);
 
                     alpha2 / (crate::PI * cos4_theta * (alpha2 + tan2_theta).powi(2))
                 }
@@ -146,7 +148,7 @@ impl MfDistribution {
                 if tan2_theta.is_infinite() {
                     0.0
                 } else {
-                    let roughness2 = cfg.roughness * cfg.roughness;
+                    let roughness2 = cfg.roughness.x * cfg.roughness.x;
                     let cos4_theta = spherical_utils::cos2_theta(wh).powi(2);
 
                     (-tan2_theta / roughness2).exp()
@@ -219,7 +221,6 @@ impl MfDistribution {
         chi > crate::EPSILON
     }
 
-
     /// Shadow-masking term. Used to make sure that only microfacets that are
     /// visible from `v` direction are considered. Uses the method described
     /// in Chapter 8.4.3 of PBR due to Heitz et al. 2013.
@@ -260,8 +261,8 @@ impl MfDistribution {
                     let cos_phi = spherical_utils::cos_phi(w);
                     let sin_phi = spherical_utils::sin_phi(w);
 
-                    let alpha2 = (cfg.roughness * cos_phi).powi(2)
-                        + (cfg.roughness * sin_phi).powi(2);
+                    let alpha2 = (cfg.roughness.x * cos_phi).powi(2)
+                        + (cfg.roughness.y * sin_phi).powi(2);
 
                     ((1.0 + alpha2 * tan2_theta).max(0.0).sqrt() - 1.0) / 2.0
                 }
@@ -271,7 +272,7 @@ impl MfDistribution {
                 if tan2_theta.is_infinite() {
                     0.0
                 } else {
-                    let a = 1.0 / (cfg.roughness * tan2_theta);
+                    let a = 1.0 / (cfg.roughness.x * tan2_theta);
 
                     if a >= 1.6 {
                         0.0
@@ -317,8 +318,8 @@ impl MfDistribution {
                 let roughness = cfg.roughness;
                 // Map the GGX ellipsoid to a hemisphere
                 let v_stretch = Normal::new(
-                    v.x * roughness,
-                    v.y * roughness,
+                    v.x * roughness.x,
+                    v.y * roughness.y,
                     v.z
                 ).normalize();
                 if v_stretch.z < 0.0 { -v_stretch } else { v_stretch };
@@ -351,13 +352,13 @@ impl MfDistribution {
                 // move back to ellipsoid
                 let wm = hemi_basis.to_world(wm);
                 Normal::new(
-                    roughness * wm.x,
-                    roughness * wm.y,
+                    roughness.x * wm.x,
+                    roughness.y * wm.y,
                     wm.z.max(1e-6)
                 ).normalize()
             }
             Self::Beckmann(cfg) => {
-                let roughness2 = cfg.roughness * cfg.roughness;
+                let roughness2 = cfg.roughness.x * cfg.roughness.x;
                 let theta = (-roughness2 * (1.0 - rand_sq.y).ln()).sqrt().atan();
                 let phi = 2.0 * crate::PI * rand_sq.x;
 
