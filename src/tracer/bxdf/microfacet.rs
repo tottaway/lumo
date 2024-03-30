@@ -204,9 +204,7 @@ pub fn dielectric_sample(
     let wh = if mfd.is_delta() {
         Normal::Z
     } else {
-        // v needs to be same direction as geometric normal for mfd sampling
-        let v_oriented = if inside { -v } else { v };
-        mfd.sample_normal(v_oriented, rand_sq).normalize()
+        mfd.sample_normal(v, rand_sq)
     };
 
     // importance sample reflection/transmission with fresnel
