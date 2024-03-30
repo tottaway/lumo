@@ -325,12 +325,13 @@ impl MfDistribution {
                 if v_stretch.z < 0.0 { -v_stretch } else { v_stretch };
 
                 // ONB basis of the hemisphere configuration
-                let u = if v_stretch.z < 0.9999 {
+                // first vector should be perpendicular to Z
+                let u = if v_stretch.z < 0.999 {
                     v_stretch.cross(Normal::Z).normalize()
                 } else {
                     Normal::X
                 };
-                let vv = v_stretch.cross(u);
+                let vv = u.cross(v_stretch);
                 let hemi_basis = Onb::new_from_basis(u, vv, v_stretch);
 
                 // first a point on the unit disk
@@ -338,7 +339,7 @@ impl MfDistribution {
                 let theta = 2.0 * crate::PI * rand_sq.y;
                 let x = r * theta.cos();
                 // then map it to the projection disk
-                let h = (1.0 - x * x).sqrt();
+                let h = (1.0 - x * x).max(0.0).sqrt();
                 let lerp = (1.0 + v_stretch.z) / 2.0;
                 let y = (1.0 - lerp) * h + lerp * r * theta.sin();
 
