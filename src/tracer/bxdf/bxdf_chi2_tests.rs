@@ -113,11 +113,20 @@ fn chi2_pass(wo: Direction, bxdf: &BxDF) -> bool {
         println!("Got 0 DoF!");
         false
     } else {
+        // null hypothesis = our sampling follows the PDF
+
         // todo: code the CDF, should be simple but boring
         let chi2 = ChiSquared::new(dof as Float).unwrap();
+        /* p-value, probability to get test statistic at least as extreme,
+         * assuming null hypothesis holds
+         */
         let pval = 1.0 - chi2.cdf(stat);
-        println!("test statistic: {} chi2 cdf: {}", stat, 1.0 - pval);
-        pval < CHI2_SLEVEL
+        println!("test statistic: {} p-value: {}", stat, pval);
+
+        // we are possibly running multiple chi2 tests. apply Šidák correction
+        let alpha = 1.0 - (1.0 - CHI2_SLEVEL).powf(1.0 / CHI2_RUNS as Float);
+
+        pval >= alpha
     }
 }
 
