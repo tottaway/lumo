@@ -2,7 +2,7 @@ use super::*;
 use statrs::distribution::{ ChiSquared, ContinuousCDF };
 
 const NUM_SAMPLES: usize = 1_000_000;
-const THETA_BINS: usize = 64;
+const THETA_BINS: usize = 80;
 const PHI_BINS: usize = 2 * THETA_BINS;
 const CHI2_RUNS: usize = 5;
 const CHI2_SLEVEL: Float = 0.05;
@@ -77,7 +77,15 @@ fn chi2_pass(wo: Direction, bxdf: &BxDF) -> bool {
         for theta_bin in 0..THETA_BINS {
             let idx = phi_bin + theta_bin * PHI_BINS;
 
-            if expected_freq[idx] < CHI2_MIN_FREQ {
+            if expected_freq[idx] == 0.0 {
+                if actual_freq[idx] as Float > NUM_SAMPLES as Float * 1e-5 {
+                    println!(
+                        "Found sampled value of {} where expectation was zero.",
+                        actual_freq[idx]
+                    );
+                    return false;
+                }
+            } else if expected_freq[idx] < CHI2_MIN_FREQ {
                 pooled_samples += actual_freq[idx];
                 pooled_computed += expected_freq[idx];
             } else if pooled_computed < CHI2_MIN_FREQ {
@@ -98,7 +106,7 @@ fn chi2_pass(wo: Direction, bxdf: &BxDF) -> bool {
         dof += 1;
     }
 
-    // blaa blaa i dont know
+    // we assume that all parameters are known in the pearson chi2 test of goodness of fit
     dof -= 1;
 
     if dof <= 0 {
@@ -108,7 +116,7 @@ fn chi2_pass(wo: Direction, bxdf: &BxDF) -> bool {
         // todo: code the CDF, should be simple but boring
         let chi2 = ChiSquared::new(dof as Float).unwrap();
         let pval = 1.0 - chi2.cdf(stat);
-
+        println!("test statistic: {} chi2 cdf: {}", stat, 1.0 - pval);
         pval < CHI2_SLEVEL
     }
 }
@@ -123,9 +131,8 @@ fn sample_frequencies(wo: Direction, bxdf: &BxDF) -> [usize; THETA_BINS*PHI_BINS
         match bxdf.sample(wo, rand_utils::unit_square()) {
             None => (),
             Some(wi) => {
-                let theta = wi.z.acos();
-                let phi = wi.y.atan2(wi.x);
-                let phi = if phi < 0.0 { phi + 2.0 * crate::PI } else { phi };
+                let theta = spherical_utils::theta(wi);
+                let phi = spherical_utils::phi(wi);
 
                 let theta_bin = ((theta * theta_factor) as usize).max(0).min(THETA_BINS - 1);
                 let phi_bin = ((phi * phi_factor) as usize).max(0).min(PHI_BINS - 1);
