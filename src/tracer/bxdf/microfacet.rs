@@ -33,7 +33,7 @@ mod util {
             let cos_ti = (1.0 - sin2_ti).max(0.0).sqrt();
             let wi = -v / eta_ratio + (cos_to / eta_ratio - cos_ti) * n;
 
-            if wi.z == 0.0 || spherical_utils::same_hemisphere(wi, v) {
+            if spherical_utils::same_hemisphere(wi, v) {
                 None
             } else {
                 Some( wi )
