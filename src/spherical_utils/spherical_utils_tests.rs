@@ -55,9 +55,10 @@ fn sin2_theta_test() {
 fn tan_theta_test() {
     for _ in 0..NUM_SAMPLES {
         let w = rand_utils::square_to_cos_hemisphere(rand_utils::unit_square()).normalize();
-        if cos_theta(w) >= crate::EPSILON {
-            assert!((tan_theta(w) - theta(w).tan()) < 1e-5);
-        }
+        assert!(
+            (tan_theta(w) - theta(w).tan()) < 1e-5
+                || (tan_theta(w).is_infinite() && theta(w).tan().is_infinite())
+        );
     }
 }
 
@@ -72,9 +73,10 @@ fn tan_theta_infinite_test() {
 fn tan2_theta_test() {
     for _ in 0..NUM_SAMPLES {
         let w = rand_utils::square_to_cos_hemisphere(rand_utils::unit_square()).normalize();
-        if cos2_theta(w) >= crate::EPSILON {
-            assert!((tan2_theta(w) - theta(w).tan().powi(2)) < 1e-5);
-        }
+        assert!(
+            (tan2_theta(w) - theta(w).tan().powi(2)) < 1e-5
+                || (tan2_theta(w).is_infinite() && theta(w).tan().powi(2).is_infinite())
+        );
     }
 }
 
