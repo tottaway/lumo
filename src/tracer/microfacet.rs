@@ -321,7 +321,8 @@ impl MfDistribution {
                     v.y * roughness.y,
                     v.z
                 ).normalize();
-                if v_stretch.z < 0.0 { -v_stretch } else { v_stretch };
+                // orient the sampled normal to same hemisphere as geometric normal
+                let v_stretch = if v_stretch.z < 0.0 { -v_stretch } else { v_stretch };
 
                 // ONB basis of the hemisphere configuration
                 // don't use Onb class, as it has too strict requirements for orthonormality
