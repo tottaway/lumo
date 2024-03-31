@@ -359,7 +359,7 @@ impl MfDistribution {
                 Normal::new(
                     roughness.x * wm.x,
                     roughness.y * wm.y,
-                    wm.z.max(1e-6)
+                    wm.z.max(1e-5)
                 ).normalize()
             }
             Self::Beckmann(cfg) => {
