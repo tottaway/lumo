@@ -1,7 +1,12 @@
 use super::*;
+use crate::simpson_integration;
 
 const NUM_BINS: usize = 5;
 const NUM_SAMPLES: usize = 10_000_000;
+
+// used for numerically integrating PDF over whole space
+const THETA_BINS: usize = 80;
+const PHI_BINS: usize = 2 * THETA_BINS;
 
 #[test]
 fn lambertian_sampling() {
@@ -11,7 +16,7 @@ fn lambertian_sampling() {
 }
 
 #[test]
-fn conductor_sampling_75() {
+fn conductor75_sampling() {
     let mfd = MfDistribution::new(0.75, 1.0, 0.0, true);
     let bxdf = BxDF::MfConductor(mfd);
 
@@ -19,7 +24,7 @@ fn conductor_sampling_75() {
 }
 
 #[test]
-fn conductor_sampling_50() {
+fn conductor50_sampling() {
     let mfd = MfDistribution::new(0.5, 1.0, 0.0, true);
     let bxdf = BxDF::MfConductor(mfd);
 
@@ -27,7 +32,7 @@ fn conductor_sampling_50() {
 }
 
 #[test]
-fn conductor_sampling_25() {
+fn conductor25_sampling() {
     let mfd = MfDistribution::new(0.25, 1.0, 0.0, true);
     let bxdf = BxDF::MfConductor(mfd);
 
@@ -35,7 +40,7 @@ fn conductor_sampling_25() {
 }
 
 #[test]
-fn conductor_sampling_10() {
+fn conductor10_sampling() {
     let mfd = MfDistribution::new(0.10, 1.0, 0.0, true);
     let bxdf = BxDF::MfConductor(mfd);
 
@@ -111,12 +116,44 @@ fn do_sampling(bxdf: BxDF) -> Vec<Vec<Float>> {
     }
     let good_samples = NUM_SAMPLES - num_failed;
 
-    // scale bins properly
+    let integral = integrate_sphere(wo, &bxdf);
+    println!("integral over whole space: {}", integral);
+    /* scale bins properly based on samples and integral over whole space of PDF.
+     * (PDF for sampling microfacets does not always integrate to 1 over whole space)
+     */
     for i in 0..NUM_BINS {
         for j in 0..NUM_BINS {
-            bins[i][j] *= (NUM_BINS * NUM_BINS) as Float / good_samples as Float;
+            bins[i][j] *= integral * (NUM_BINS * NUM_BINS) as Float / good_samples as Float;
         }
     }
     println!("failed samples: {:.2} %", 100.0 * num_failed as Float / NUM_SAMPLES as Float);
     bins
+}
+
+fn integrate_sphere(wo: Direction, bxdf: &BxDF) -> Float {
+    let mut integral = 0.0;
+
+    let theta_factor = crate::PI / THETA_BINS as Float;
+    let phi_factor = (2.0 * crate::PI) / PHI_BINS as Float;
+
+    for theta_bin in 0..THETA_BINS {
+        let theta0 = theta_bin as Float * theta_factor;
+        let theta1 = theta0 + theta_factor;
+        for phi_bin in 0..PHI_BINS {
+            let phi0 = phi_bin as Float * phi_factor;
+            let phi1 = phi0 + phi_factor;
+            let f = |theta: Float, phi: Float| {
+                let wi = Direction::new(
+                    theta.sin() * phi.cos(),
+                    theta.sin() * phi.sin(),
+                    theta.cos(),
+                );
+                // pdf in solid angle, change to spherical coordinates
+                bxdf.pdf(wo, wi, false) * theta.sin()
+            };
+            integral += simpson_integration::simpson2d(f, theta0, phi0, theta1, phi1);
+        }
+    }
+
+    integral
 }

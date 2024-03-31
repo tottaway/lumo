@@ -5,7 +5,7 @@ mod microfacet;
 mod scatter;
 
 #[cfg(test)]
-mod bxdf_tests;
+mod bxdf_sampling_tests;
 
 #[cfg(test)]
 mod bxdf_chi2_tests;
