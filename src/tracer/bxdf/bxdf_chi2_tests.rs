@@ -12,53 +12,101 @@ const CHI2_RUNS: usize = 5;
 const CHI2_SLEVEL: Float = 0.05;
 const CHI2_MIN_FREQ: Float = 5.0;
 
-fn mfd(roughness: Float) -> MfDistribution {
-    MfDistribution::new(roughness, 1.5, 0.0, true)
+fn mfd(roughness: Float, eta: Float) -> MfDistribution {
+    MfDistribution::new(roughness, eta, 0.0, true)
 }
 
 #[test]
 fn lambertian_chi2() {
     let bxdf = BxDF::Lambertian;
-    for _ in 0..CHI2_RUNS {
-        let wo = -rand_utils::square_to_cos_hemisphere(rand_utils::unit_square());
-        assert!(chi2_pass(wo, &bxdf));
-    }
+    test_bxdf(bxdf)
+}
+
+#[test]
+fn conductor75_chi2() {
+    let mfd = mfd(0.75, 1.5);
+    let bxdf = BxDF::MfConductor(mfd);
+    test_bxdf(bxdf)
 }
 
 #[test]
 fn conductor50_chi2() {
-    let mfd = mfd(0.5);
+    let mfd = mfd(0.5, 1.5);
     let bxdf = BxDF::MfConductor(mfd);
-    for _ in 0..CHI2_RUNS {
-        let wo = -rand_utils::square_to_cos_hemisphere(rand_utils::unit_square());
-        assert!(chi2_pass(wo, &bxdf));
-    }
+    test_bxdf(bxdf)
 }
 
 #[test]
 fn conductor25_chi2() {
-    let mfd = mfd(0.25);
+    let mfd = mfd(0.25, 1.5);
     let bxdf = BxDF::MfConductor(mfd);
-    for _ in 0..CHI2_RUNS {
-        let wo = -rand_utils::square_to_cos_hemisphere(rand_utils::unit_square());
-        assert!(chi2_pass(wo, &bxdf));
-    }
+    test_bxdf(bxdf)
 }
 
 #[test]
-fn dielectric50_chi2() {
-    let mfd = mfd(0.5);
-    let bxdf = BxDF::MfDielectric(mfd);
-    for _ in 0..CHI2_RUNS {
-        let wo = -rand_utils::square_to_cos_hemisphere(rand_utils::unit_square());
-        assert!(chi2_pass(wo, &bxdf));
-    }
+fn conductor10_chi2() {
+    let mfd = mfd(0.10, 1.5);
+    let bxdf = BxDF::MfConductor(mfd);
+    test_bxdf(bxdf)
 }
 
 #[test]
-fn dielectric25_chi2() {
-    let mfd = mfd(0.25);
+fn dielectric75_eta15_chi2() {
+    let mfd = mfd(0.75, 1.5);
     let bxdf = BxDF::MfDielectric(mfd);
+    test_bxdf(bxdf)
+}
+
+#[test]
+fn dielectric50_eta15_chi2() {
+    let mfd = mfd(0.5, 1.5);
+    let bxdf = BxDF::MfDielectric(mfd);
+    test_bxdf(bxdf)
+}
+
+#[test]
+fn dielectric25_eta15_chi2() {
+    let mfd = mfd(0.25, 1.5);
+    let bxdf = BxDF::MfDielectric(mfd);
+    test_bxdf(bxdf)
+}
+
+#[test]
+fn dielectric10_eta15_chi2() {
+    let mfd = mfd(0.10, 1.5);
+    let bxdf = BxDF::MfDielectric(mfd);
+    test_bxdf(bxdf)
+}
+
+#[test]
+fn dielectric75_eta25_chi2() {
+    let mfd = mfd(0.75, 2.5);
+    let bxdf = BxDF::MfDielectric(mfd);
+    test_bxdf(bxdf)
+}
+
+#[test]
+fn dielectric50_eta25_chi2() {
+    let mfd = mfd(0.5, 2.5);
+    let bxdf = BxDF::MfDielectric(mfd);
+    test_bxdf(bxdf)
+}
+
+#[test]
+fn dielectric25_eta25_chi2() {
+    let mfd = mfd(0.25, 2.5);
+    let bxdf = BxDF::MfDielectric(mfd);
+    test_bxdf(bxdf)
+}
+
+#[test]
+fn dielectric10_eta25_chi2() {
+    let mfd = mfd(0.10, 2.5);
+    let bxdf = BxDF::MfDielectric(mfd);
+    test_bxdf(bxdf)
+}
+
+fn test_bxdf(bxdf: BxDF) {
     for _ in 0..CHI2_RUNS {
         let wo = -rand_utils::square_to_cos_hemisphere(rand_utils::unit_square());
         assert!(chi2_pass(wo, &bxdf));
