@@ -31,6 +31,10 @@ mod spherical_utils;
 /// Tone mapping functions
 mod tone_mapping;
 
+#[cfg(test)]
+/// Implementation of adaptive simpson for numerical integration. Used in tests only.
+mod simpson_integration;
+
 type Transform = glam::DAffine3;
 type Vec2 = glam::DVec2;
 /// 3x3 matrix type alias
