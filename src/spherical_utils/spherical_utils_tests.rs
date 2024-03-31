@@ -56,7 +56,7 @@ fn tan_theta_test() {
     for _ in 0..NUM_SAMPLES {
         let w = rand_utils::square_to_cos_hemisphere(rand_utils::unit_square()).normalize();
         if cos_theta(w) >= crate::EPSILON {
-            assert!((tan_theta(w) - theta(w).tan()) < 10.0 * crate::EPSILON);
+            assert!((tan_theta(w) - theta(w).tan()) < 1e-5);
         }
     }
 }
@@ -73,7 +73,7 @@ fn tan2_theta_test() {
     for _ in 0..NUM_SAMPLES {
         let w = rand_utils::square_to_cos_hemisphere(rand_utils::unit_square()).normalize();
         if cos2_theta(w) >= crate::EPSILON {
-            assert!((tan2_theta(w) - theta(w).tan().powi(2)) < 100.0 * crate::EPSILON);
+            assert!((tan2_theta(w) - theta(w).tan().powi(2)) < 1e-5);
         }
     }
 }
