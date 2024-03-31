@@ -1,5 +1,9 @@
 use super::*;
 use statrs::distribution::{ ChiSquared, ContinuousCDF };
+use std::io::Write;
+use std::fs::File;
+use std::path::Path;
+use uuid::Uuid;
 
 const NUM_SAMPLES: usize = 1_000_000;
 const THETA_BINS: usize = 80;
@@ -61,6 +65,19 @@ fn dielectric25_chi2() {
     }
 }
 
+fn write_tables(
+    actual: [usize; PHI_BINS*THETA_BINS],
+    expected: [Float; PHI_BINS*THETA_BINS],
+    wo: Direction,
+) {
+    let file_name = format!("/tmp/lumo_chi2_{}.json", Uuid::new_v4());
+    let path = Path::new(&file_name);
+    let mut tmp_file = File::create(path).expect("Unable to create temporary file");
+    write!(tmp_file, "{{\"expected\":{:?},\"actual\":{:?},\"wo\":{}}}", expected, actual, wo)
+        .expect("Unable to write to temporary file");
+    println!("Dumped tables to {}", path.to_str().unwrap());
+}
+
 fn chi2_pass(wo: Direction, bxdf: &BxDF) -> bool {
     let actual_freq = sample_frequencies(wo, &bxdf);
     let expected_freq = compute_frequencies(wo, &bxdf);
@@ -80,9 +97,11 @@ fn chi2_pass(wo: Direction, bxdf: &BxDF) -> bool {
             if expected_freq[idx] == 0.0 {
                 if actual_freq[idx] as Float > NUM_SAMPLES as Float * 1e-5 {
                     println!(
-                        "Found sampled value of {} where expectation was zero.",
-                        actual_freq[idx]
+                        "Found sampled value of {} at {} where expectation was zero.",
+                        actual_freq[idx],
+                        idx,
                     );
+                    write_tables(actual_freq, expected_freq, wo);
                     return false;
                 }
             } else if expected_freq[idx] < CHI2_MIN_FREQ {
@@ -126,7 +145,14 @@ fn chi2_pass(wo: Direction, bxdf: &BxDF) -> bool {
         // we are possibly running multiple chi2 tests. apply Šidák correction
         let alpha = 1.0 - (1.0 - CHI2_SLEVEL).powf(1.0 / CHI2_RUNS as Float);
 
-        pval >= alpha
+        let passed = pval >= alpha;
+
+        if !passed {
+            // write the tables in a pretty json (with wo)
+            write_tables(actual_freq, expected_freq, wo);
+        }
+
+        passed
     }
 }
 
