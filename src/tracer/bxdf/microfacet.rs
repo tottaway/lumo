@@ -28,7 +28,13 @@ mod util {
         } else {
             let cos_ti = (1.0 - sin2_ti).sqrt();
             let n = if v.z < 0.0 { -no } else { no };
-            Some( -v * eta_ratio + (eta_ratio * cos_to_abs - cos_ti) * n )
+            let wi = -v * eta_ratio + (eta_ratio * cos_to_abs - cos_ti) * n;
+
+            if wi.z == 0.0 || spherical_utils::same_hemisphere(wi, v) {
+                None
+            } else {
+                Some( wi )
+            }
         }
     }
 
@@ -146,7 +152,7 @@ pub fn dielectric_f(
 
     let cos_theta_v = spherical_utils::cos_theta(v);
     let cos_theta_wi = spherical_utils::cos_theta(wi);
-    let is_reflection = cos_theta_v * cos_theta_wi > 0.0;
+    let is_reflection = spherical_utils::same_hemisphere(v, wi);
 
     let eta_ratio = if is_reflection {
         1.0
@@ -233,8 +239,7 @@ pub fn dielectric_pdf(
     let v = -wo;
     let (v, wi) = if swap_dir { (wi, v) } else { (v, wi) };
     let v_inside = v.z < 0.0;
-    let wi_inside = wi.z < 0.0;
-    let is_reflection = v_inside == wi_inside;
+    let is_reflection = spherical_utils::same_hemisphere(v, wi);
 
     let eta_ratio = if is_reflection {
         1.0
