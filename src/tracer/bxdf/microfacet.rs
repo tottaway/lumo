@@ -14,21 +14,24 @@ mod util {
         }
     }
 
-    pub fn refract(eta_ratio: Float, v: Direction, no: Normal) -> Option<Direction> {
+    pub fn refract(eta: Float, v: Direction, no: Normal) -> Option<Direction> {
         /* Snell-Descartes law */
-        let cos_to = no.dot(v);
-        let cos_to_abs = cos_to.abs();
+        // possibly flip the orientation if we are "inside"
+        let (cos_to, eta_ratio, n) = if no.dot(v) < 0.0 {
+            (-no.dot(v), 1.0 / eta, -no)
+        } else {
+            (no.dot(v), eta, no)
+        };
         let sin2_to = 1.0 - cos_to * cos_to;
-        let sin2_ti = eta_ratio * eta_ratio * sin2_to;
+        let sin2_ti = sin2_to / eta_ratio.powi(2);
 
         if sin2_ti >= 1.0 {
             /* total internal reflection */
             // we don't do it?
             None
         } else {
-            let cos_ti = (1.0 - sin2_ti).sqrt();
-            let n = if v.z < 0.0 { -no } else { no };
-            let wi = -v * eta_ratio + (eta_ratio * cos_to_abs - cos_ti) * n;
+            let cos_ti = (1.0 - sin2_ti).max(0.0).sqrt();
+            let wi = -v / eta_ratio + (cos_to / eta_ratio - cos_ti) * n;
 
             if wi.z == 0.0 || spherical_utils::same_hemisphere(wi, v) {
                 None
@@ -205,8 +208,6 @@ pub fn dielectric_sample(
     rand_sq: Vec2
 ) -> Option<Direction> {
     let v = -wo;
-    let inside = v.z < 0.0;
-
     let wh = if mfd.is_delta() {
         Normal::Z
     } else {
@@ -220,13 +221,7 @@ pub fn dielectric_sample(
     if rand_utils::rand_float() < pr / (pr + pt) {
         util::reflect(v, wh)
     } else {
-        let eta_ratio = if inside {
-            mfd.eta()
-        } else {
-            1.0 / mfd.eta()
-        };
-
-        util::refract(eta_ratio, v, wh)
+        util::refract(mfd.eta(), v, wh)
     }
 }
 
