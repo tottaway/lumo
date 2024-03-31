@@ -64,4 +64,17 @@ mod tests {
 
         assert!(v.distance(vp) < 1e-10);
     }
+
+    #[test]
+    fn from_basis() {
+        let u = Direction::new(1.23, 4.56, 7.89).normalize();
+        let v = u.cross(Normal::X).normalize();
+        let w = u.cross(v);
+        let uvw = Onb::new_from_basis(u, v, w);
+
+        let v = Direction::new(9.87, 6.54, 3.21);
+        let vp = uvw.to_world(uvw.to_local(v));
+
+        assert!(v.distance(vp) < 1e-10);
+    }
 }
