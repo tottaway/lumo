@@ -1,7 +1,7 @@
 use super::*;
 use crate::simpson_integration;
 
-const NUM_BINS: usize = 5;
+const NUM_BINS: usize = 10;
 const NUM_SAMPLES: usize = 10_000_000;
 
 // used for numerically integrating PDF over whole space
@@ -68,7 +68,7 @@ fn assert_bins(bins: Vec<Vec<Float>>) {
             let delta = (2.0 * crate::PI - bins[i][j]).abs();
             print!("{:.3} ", delta);
             // rather lax here...
-            assert!(delta < NUM_BINS as Float * 1e-1);
+            assert!(delta < 5e-2 * NUM_BINS as Float);
         }
         println!("");
     }
@@ -105,9 +105,9 @@ fn do_sampling(bxdf: BxDF) -> Vec<Vec<Float>> {
                     num_failed += 1;
                     continue;
                 }
-                let wi_phi = (wi.x.atan2(wi.y) + crate::PI) / (2.0 * crate::PI);
+                let wi_phi = spherical_utils::phi(wi) / (2.0 * crate::PI);
                 let phi_idx = (wi_phi * NUM_BINS as Float) as usize;
-                let wi_cos_theta = wi.z;
+                let wi_cos_theta = spherical_utils::cos_theta(wi);
                 let theta_idx = (wi_cos_theta * NUM_BINS as Float) as usize;
                 // can be out of bounds in rare cases. fix if it happens.
                 bins[theta_idx][phi_idx] += 1.0 / pdf;
