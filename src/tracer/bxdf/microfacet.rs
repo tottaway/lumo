@@ -58,7 +58,6 @@ mod util {
         // need reflection color, its in the .mtl files somewhere
         d * f * g / (4.0 * cos_theta_v.abs() * cos_theta_wi.abs())
     }
-
 }
 
 /*
@@ -73,7 +72,7 @@ pub fn conductor_f(
     let v = -wo;
     if mfd.is_delta() {
         let f = mfd.f(v, Normal::Z);
-        albedo * f / wi.z.abs()
+        albedo * f / spherical_utils::cos_theta(wi).abs()
     } else {
         albedo * util::reflect_coeff(wo, wi, mfd)
     }
@@ -87,6 +86,7 @@ pub fn conductor_sample(
     let v = -wo;
 
     if mfd.is_delta() {
+        // 2.0 * v.project(Z) - v = 2.0 * (0, 0, v.z) - v = (-v.x, -v.y, v.z)
         Some( Direction::new(-v.x, -v.y, v.z) )
     } else {
         let wh = mfd.sample_normal(v, rand_sq);
