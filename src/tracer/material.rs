@@ -4,6 +4,9 @@ use crate::tracer::{
     texture::Texture, bsdf::BSDF, bxdf::BxDF, onb::Onb
 };
 
+#[cfg(test)]
+mod white_furnace_tests;
+
 /// Describes which material an object is made out of
 pub enum Material {
     /// Material with microfacet BxDF(s)
