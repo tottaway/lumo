@@ -5,10 +5,10 @@ mod microfacet;
 mod scatter;
 
 #[cfg(test)]
-mod bxdf_sampling_tests;
+mod sampling_tests;
 
 #[cfg(test)]
-mod bxdf_chi2_tests;
+mod chi2_tests;
 
 #[derive(Clone, Copy)]
 pub enum BxDF {

@@ -25,97 +25,97 @@ fn disk(material: Material) -> Disk {
 }
 
 #[test]
-fn white_furnace_diffuse() {
+fn diffuse_white_furnace() {
     let m = Material::diffuse(white_texture());
     test_material(m);
 }
 
 #[test]
-fn white_furnace_conductor75() {
+fn conductor75_white_furnace() {
     let m = Material::rough_mirror(white_texture(), 0.75, true);
     test_material(m);
 }
 
 #[test]
-fn white_furnace_conductor50() {
+fn conductor50_white_furnace() {
     let m = Material::rough_mirror(white_texture(), 0.50, true);
     test_material(m);
 }
 
 #[test]
-fn white_furnace_conductor25() {
+fn conductor25_white_furnace() {
     let m = Material::rough_mirror(white_texture(), 0.25, true);
     test_material(m);
 }
 
 #[test]
-fn white_furnace_conductor10() {
+fn conductor10_white_furnace() {
     let m = Material::rough_mirror(white_texture(), 0.10, true);
     test_material(m);
 }
 
 #[test]
-fn white_furnace_conductor0() {
+fn conductor0_white_furnace() {
     let m = Material::rough_mirror(white_texture(), 0.00, true);
     test_material(m);
 }
 
 #[test]
-fn white_furnace_dielectric75_eta15() {
+fn dielectric75_eta15_white_furnace() {
     let m = Material::transparent(white_texture(), 0.75, 1.5);
     test_material(m);
 }
 
 #[test]
-fn white_furnace_dielectric50_eta15() {
+fn dielectric50_eta15_white_furnace() {
     let m = Material::transparent(white_texture(), 0.50, 1.5);
     test_material(m);
 }
 
 #[test]
-fn white_furnace_dielectric25_eta15() {
+fn dielectric25_eta15_white_furnace() {
     let m = Material::transparent(white_texture(), 0.25, 1.5);
     test_material(m);
 }
 
 #[test]
-fn white_furnace_dielectric10_eta15() {
+fn dielectric10_eta15_white_furnace() {
     let m = Material::transparent(white_texture(), 0.10, 1.5);
     test_material(m);
 }
 
 #[test]
-fn white_furnace_dielectric0_eta15() {
+fn dielectric0_eta15_white_furnace() {
     let m = Material::transparent(white_texture(), 0.00, 1.5);
     test_material(m);
 }
 
 #[test]
-fn white_furnace_dielectric75_eta25() {
+fn dielectric75_eta25_white_furnace() {
     let m = Material::transparent(white_texture(), 0.75, 2.5);
     test_material(m);
 }
 
 #[test]
-fn white_furnace_dielectric50_eta25() {
+fn dielectric50_eta25_white_furnace() {
     let m = Material::transparent(white_texture(), 0.50, 2.5);
     test_material(m);
 }
 
 #[test]
-fn white_furnace_dielectric25_eta25() {
+fn dielectric25_eta25_white_furnace() {
     let m = Material::transparent(white_texture(), 0.25, 2.5);
     test_material(m);
 }
 
 #[test]
-fn white_furnace_dielectric10_eta25() {
+fn dielectric10_eta25_white_furnace() {
     let m = Material::transparent(white_texture(), 0.10, 2.5);
     test_material(m);
 }
 
 #[test]
-fn white_furnace_dielectric0_eta25() {
+fn dielectric0_eta25_white_furnace() {
     let m = Material::transparent(white_texture(), 0.00, 2.5);
     test_material(m);
 }
