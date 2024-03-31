@@ -156,10 +156,11 @@ pub fn dielectric_f(
     let cos_theta_v = spherical_utils::cos_theta(v);
     let cos_theta_wi = spherical_utils::cos_theta(wi);
     let is_reflection = spherical_utils::same_hemisphere(v, wi);
+    let v_inside = cos_theta_v < 0.0;
 
     let eta_ratio = if is_reflection {
         1.0
-    } else if cos_theta_v < 0.0 {
+    } else if v_inside {
         1.0 / mfd.eta()
     } else {
         mfd.eta()
@@ -233,8 +234,10 @@ pub fn dielectric_pdf(
 ) -> Float {
     let v = -wo;
     let (v, wi) = if swap_dir { (wi, v) } else { (v, wi) };
-    let v_inside = v.z < 0.0;
+    let cos_theta_v = spherical_utils::cos_theta(v);
+    let cos_theta_wi = spherical_utils::cos_theta(wi);
     let is_reflection = spherical_utils::same_hemisphere(v, wi);
+    let v_inside = cos_theta_v < 0.0;
 
     let eta_ratio = if is_reflection {
         1.0
@@ -245,12 +248,17 @@ pub fn dielectric_pdf(
     };
 
     let wh = (v + wi * eta_ratio).normalize();
+    // orient MS normal to same side as geometric normal
     let wh = if wh.z < 0.0 { -wh } else { wh };
     let wh_dot_v = v.dot(wh);
     let wh_dot_wi = wi.dot(wh);
 
+    if wh_dot_v == 0.0 || wh_dot_wi == 0.0 {
+        return 0.0;
+    }
+
     // discard backfacing wh
-    if wh_dot_v * v.z < 0.0 || wh_dot_wi * wi.z < 0.0 {
+    if wh_dot_v * cos_theta_v < 0.0 || wh_dot_wi * cos_theta_wi < 0.0 {
         return 0.0;
     }
 
