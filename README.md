@@ -18,7 +18,7 @@ Lumo is a CPU based multithreaded rendering engine. Made with the goal of learni
 ![Circle of spheres](https://i.imgur.com/zraIbaH.png)
 
 ### Usage
-Once the repository is cloned, the `examples/` folder contains scenes. To run the `hello_sphere.rs` example execute the command:
+Once the repository is cloned, the `examples/` folder contains scenes, that can be ran with `cargo`:
 
 ```bash
 cargo run --example hello_sphere
@@ -39,48 +39,7 @@ Options:
   --help            display usage information
 ```
 
-#### API example
-The `hello_sphere.rs` example is written as follows:
-
-```rust
-use lumo::tracer::*;
-use lumo::*;
-
-fn main() -> Result<(), png::EncodingError> {
-    let camera = Camera::default(1280, 720);
-    let mut scene = Scene::default();
-
-    scene.add(Plane::new(
-        Vec3::NEG_Y,
-        Vec3::Y,
-        Material::diffuse(Texture::Solid(Color::new(190, 200, 210))),
-    ));
-
-    scene.add_light(Sphere::new(
-        8.0 * Vec3::Y + 1.5 * Vec3::NEG_Z,
-        4.0,
-        Material::Light(Texture::Solid(Color::WHITE)),
-    ));
-
-    scene.add(
-        Sphere::new(
-            Vec3::ZERO,
-            1.0,
-            Material::diffuse(Texture::Solid(Color::new(0, 0, 255))),
-        )
-        .scale(0.3, 0.3, 0.3)
-        .translate(0.0, -0.7, -1.5),
-    );
-
-    let mut renderer = Renderer::new(scene, camera);
-    renderer.set_samples(36);
-    renderer.render().save("hello.png")
-}
-```
-
 ### References
 * [Physically Based Rendering](https://www.pbr-book.org/)
-* [Ray Tracing in One Weekend](https://raytracing.github.io/)
 * [Moving Frostbite to Physically Based Rendering](https://seblagarde.files.wordpress.com/2015/07/course_notes_moving_frostbite_to_pbr_v32.pdf)
 * [Eric Veach's PhD Thesis](http://graphics.stanford.edu/papers/veach_thesis/)
-* [ekhzang/rpt](https://github.com/ekzhang/rpt)
