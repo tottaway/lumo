@@ -79,7 +79,7 @@ pub fn mis_weight(
             let xo = ct.h.p;
             let xi = ls.h.p;
             let wi = (xi - xo).normalize();
-            camera.pdf(wi)
+            camera.pdf_wi(wi)
         } else {
             let ct_m = &camera_path[t - 2];
             ct.pdf_area(ct_m, ls, Transport::Radiance)

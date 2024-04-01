@@ -243,7 +243,7 @@ impl Camera {
     }
 
     /// PDF for `wi` direction.
-    pub fn pdf(&self, wi: Direction) -> Float {
+    pub fn pdf_wi(&self, wi: Direction) -> Float {
         let cfg = self.get_cfg();
         let wi_local = cfg.camera_basis.to_local(wi);
         let cos_theta = spherical_utils::cos_theta(wi_local);
@@ -301,7 +301,7 @@ impl Camera {
                 } else {
                     crate::PI * cfg.lens_radius * cfg.lens_radius
                 };
-                let albedo = self.pdf(wi) / (lens_area * cos_theta);
+                let albedo = self.pdf_wi(wi) / (lens_area * cos_theta);
 
                 FilmSample::new(Color::splat(albedo), raster_xy, true)
             }

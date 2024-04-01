@@ -5,7 +5,7 @@ pub fn camera_path<'a>(scene: &'a Scene, camera: &'a Camera, r: Ray) -> Vec<Vert
     let gathered = Color::WHITE;
     let root = Vertex::camera(r.origin, gathered);
     let wi = r.dir;
-    let pdf_fwd = camera.pdf(wi);
+    let pdf_fwd = camera.pdf_wi(wi);
 
     walk(scene, r, root, gathered, pdf_fwd, Transport::Radiance)
 }
