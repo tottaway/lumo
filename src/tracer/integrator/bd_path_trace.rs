@@ -54,6 +54,7 @@ fn connect_light_path(
 ) -> Option<FilmSample> {
     // assert!(s >= 2);
 
+    // sample direction
     let light_last = &light_path[s - 1];
     let xi = light_last.h.p;
     let ro = camera.sample_towards(xi, rand_utils::unit_square());
@@ -62,6 +63,7 @@ fn connect_light_path(
         return None;
     }
 
+    // test visibility
     let xo = ro.origin;
     let v = -ro.dir;
     let vr = light_last.h.generate_ray(v);
@@ -70,6 +72,7 @@ fn connect_light_path(
         return None;
     }
 
+    // get color
     let light_scnd_last = &light_path[s - 2];
     let mut sample = camera.importance_sample(&ro);
     sample.color /= pdf;
