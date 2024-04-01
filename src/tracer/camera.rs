@@ -274,32 +274,36 @@ impl Camera {
                 let wi = ro.dir;
                 let wi_local = cfg.camera_basis.to_local(wi);
                 let cos_theta = spherical_utils::cos_theta(wi_local);
-                if cos_theta < 0.0 {
+                if cos_theta <= 0.0 {
                     return FilmSample::default();
                 }
 
-                let pdf = self.pdf(wi);
-
-                let color = Color::splat(pdf);
-
+                // compute point in raster space
                 let fl = if cfg.lens_radius == 0.0 {
                     1.0 / cos_theta
                 } else {
                     cfg.focal_length / cos_theta
                 };
+                let focus = ro.at(fl);
+                let focus_local = cfg.camera_basis.to_local(focus) + cfg.origin;
 
+                // compute intensity
                 let resolution = self.get_resolution();
                 let resolution = Vec2::new(
                     resolution.x as Float,
                     resolution.y as Float,
                 );
                 let min_res = resolution.min_element();
-
-                let focus = ro.at(fl);
-                let focus_local = cfg.camera_basis.to_local(focus) + cfg.origin;
                 let raster_xy = (focus_local.truncate() * min_res + resolution) / 2.0;
 
-                FilmSample::new(color, raster_xy, true)
+                let lens_area = if cfg.lens_radius == 0.0 {
+                    1.0
+                } else {
+                    crate::PI * cfg.lens_radius * cfg.lens_radius
+                };
+                let albedo = self.pdf(wi) / (lens_area * cos_theta);
+
+                FilmSample::new(Color::splat(albedo), raster_xy, true)
             }
         }
     }
