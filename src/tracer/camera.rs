@@ -1,4 +1,4 @@
-use crate::{Point, Direction, Float, Vec2, rand_utils};
+use crate::{ Point, Direction, Float, Vec2, rand_utils, spherical_utils };
 use glam::IVec2;
 use crate::tracer::{
     film::FilmSample, ray::Ray,
@@ -246,7 +246,7 @@ impl Camera {
     pub fn pdf(&self, wi: Direction) -> Float {
         let cfg = self.get_cfg();
         let wi_local = cfg.camera_basis.to_local(wi);
-        let cos_theta = wi_local.z;
+        let cos_theta = spherical_utils::cos_theta(wi_local);
 
         if cos_theta <= 0.0 {
             0.0
@@ -273,7 +273,7 @@ impl Camera {
             Self::Perspective(cfg, _) => {
                 let wi = ro.dir;
                 let wi_local = cfg.camera_basis.to_local(wi);
-                let cos_theta = wi_local.z;
+                let cos_theta = spherical_utils::cos_theta(wi_local);
                 if cos_theta < 0.0 {
                     return FilmSample::default();
                 }
