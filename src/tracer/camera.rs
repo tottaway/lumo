@@ -1,4 +1,7 @@
-use crate::{ Point, Direction, Float, Vec2, rand_utils, spherical_utils };
+use crate::{
+    Point, Direction, Float, Vec2, Transform,
+    Mat3, Vec3, rand_utils, spherical_utils
+};
 use glam::IVec2;
 use crate::tracer::{
     film::FilmSample, ray::Ray,
@@ -17,6 +20,7 @@ pub struct CameraConfig {
     pub focal_length: Float,
     /// Radius of the camera lens
     pub lens_radius: Float,
+    pub screen_to_camera: Transform,
 }
 
 impl CameraConfig {
@@ -27,7 +31,8 @@ impl CameraConfig {
         up: Direction,
         lens_radius: Float,
         focal_length: Float,
-        resolution: (i32, i32)
+        resolution: (i32, i32),
+        screen_to_camera: Transform,
     ) -> Self {
         assert!(resolution.0 > 0 && resolution.1 > 0);
         assert!(lens_radius >= 0.0);
@@ -47,6 +52,7 @@ impl CameraConfig {
             focal_length,
             origin,
             camera_basis,
+            screen_to_camera,
             resolution: IVec2::new(width, height),
         }
     }
@@ -86,6 +92,11 @@ impl Camera {
     ) -> Self {
         assert!(image_plane_scale > 0.0);
 
+        let near = 0.0;
+        let far = 1.0;
+        let screen_to_camera = Transform::from_scale(Vec3::new(1.0, 1.0, 1.0 / (far - near)))
+            * Transform::from_translation(Vec3::new(0.0, 0.0, -near));
+
         Self::Orthographic(
             CameraConfig::new(
                 origin,
@@ -93,7 +104,8 @@ impl Camera {
                 up,
                 lens_radius,
                 focal_length,
-                (width, height)
+                (width, height),
+                screen_to_camera,
             ),
             image_plane_scale,
         )
@@ -124,6 +136,17 @@ impl Camera {
     ) -> Self {
         assert!(vfov > 0.0 && vfov < 180.0);
 
+        let near = 1e-2;
+        let far = 1000.0;
+        // from rows
+        let projection = Transform::from_mat3_translation(
+            Mat3::from_diagonal(Vec3::new(1.0, 1.0, far / (far - near))),
+            Vec3::new(0.0, 0.0, -far * near / (far - near))
+        );
+        let tan_vfov_inv = 1.0 / (vfov.to_radians() / 2.0);
+        let scale = Transform::from_scale(Vec3::new(tan_vfov_inv, tan_vfov_inv, 1.0));
+        let screen_to_camera = scale * projection;
+
         Self::Perspective(
             CameraConfig::new(
                 origin,
@@ -131,7 +154,8 @@ impl Camera {
                 up,
                 lens_radius,
                 focal_length,
-                (width, height)
+                (width, height),
+                screen_to_camera,
             ),
             vfov.to_radians() / 2.0,
         )
