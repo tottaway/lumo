@@ -82,6 +82,16 @@ impl CameraConfig {
         self.camera_to_world.transform_vector3(wi_local)
     }
 
+    pub fn normal_to_local(&self, no: Normal) -> Normal {
+        let m = self.camera_to_world.matrix3.transpose();
+        no.x * m.x_axis + no.y * m.y_axis + no.z * m.z_axis
+    }
+
+    pub fn normal_to_world(&self, no: Normal) -> Normal {
+        let m = self.camera_to_world.matrix3.inverse().transpose();
+        let n = no.x * m.x_axis + no.y * m.y_axis + no.z * m.z_axis;
+        n
+    }
 }
 
 /// Camera abstraction
@@ -280,8 +290,7 @@ impl Camera {
         let cfg = self.get_cfg();
         let xo = ro.origin;
         let wi = ro.dir;
-        // NORMAL to world
-        let ng = cfg.direction_to_world(Normal::Z);
+        let ng = cfg.normal_to_world(Normal::Z);
 
         let lens_area = if cfg.lens_radius == 0.0 {
             1.0
