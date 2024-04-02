@@ -1,6 +1,6 @@
 use crate::{
     Point, Direction, Float, Vec2, Transform, Normal,
-    Mat3, Vec3, rand_utils, spherical_utils
+    Mat3, Mat4, Vec4, Vec3, rand_utils, spherical_utils
 };
 use glam::IVec2;
 use crate::tracer::{
@@ -18,7 +18,9 @@ pub struct CameraConfig {
     /// Radius of the camera lens
     pub lens_radius: Float,
     /// Screen space to camera space transformation
-    pub screen_to_camera: Transform,
+    pub screen_to_camera: Mat4,
+    /// Raster space to screen space transformation
+    pub raster_to_screen: Transform,
     /// Camera space to world space transformation
     camera_to_world: Transform,
 }
@@ -32,7 +34,7 @@ impl CameraConfig {
         lens_radius: Float,
         focal_length: Float,
         resolution: (i32, i32),
-        screen_to_camera: Transform,
+        screen_to_camera: Mat4,
     ) -> Self {
         assert!(resolution.0 > 0 && resolution.1 > 0);
         assert!(lens_radius >= 0.0);
@@ -50,12 +52,24 @@ impl CameraConfig {
 
         let (width, height) = resolution;
 
+        let screen_min = Vec2::new(-1.0, -1.0);
+        let screen_max = Vec2::new(1.0, 1.0);
+        let screen_delta = screen_max - screen_min;
+        // something wrong here, we should flip y axis in raster as it grows down.
+        // but if we do, image is upside down, bug somewhere else?
+        let screen_to_raster =
+            Transform::from_scale(Vec3::new(width as Float, height as Float, 1.0))
+            * Transform::from_scale(Vec3::new(1.0 / screen_delta.x, 1.0 / screen_delta.y, 1.0))
+            * Transform::from_translation(Vec3::new(-screen_min.x, -screen_min.y, 0.0));
+        let raster_to_screen = screen_to_raster.inverse();
+
         Self {
             lens_radius,
             focal_length,
             origin,
             screen_to_camera,
             camera_to_world,
+            raster_to_screen,
             resolution: IVec2::new(width, height),
         }
     }
@@ -83,15 +97,23 @@ impl CameraConfig {
 
     pub fn normal_to_world(&self, no: Normal) -> Normal {
         let m = self.camera_to_world.matrix3.inverse().transpose();
-        let n = no.x * m.x_axis + no.y * m.y_axis + no.z * m.z_axis;
-        n
+        no.x * m.x_axis + no.y * m.y_axis + no.z * m.z_axis
+    }
+
+    pub fn raster_to_camera(&self, raster_xy: Vec2) -> Point {
+        // perspective breaks at 0.0, but 1.0 is kind of ok
+        let raster_xyz = raster_xy.extend(1.0);
+        let screen_xyz = self.raster_to_screen.transform_point3(raster_xyz);
+        let camera_xyzw = self.screen_to_camera * screen_xyz.extend(1.0);
+
+        camera_xyzw.truncate() / camera_xyzw.w
     }
 }
 
 /// Camera abstraction
 pub enum Camera {
     /// Perspective camera with configurable vertical field-of-view
-    Perspective(CameraConfig, Float),
+    Perspective(CameraConfig),
     /// Orthographic camera that preserves angles with configurable image plane scale
     Orthographic(CameraConfig, Float),
 }
@@ -124,8 +146,8 @@ impl Camera {
 
         let near = 0.0;
         let far = 1.0;
-        let screen_to_camera = Transform::from_scale(Vec3::new(1.0, 1.0, 1.0 / (far - near)))
-            * Transform::from_translation(Vec3::new(0.0, 0.0, -near));
+        let screen_to_camera = Mat4::from_scale(Vec3::new(1.0, 1.0, 1.0 / (far - near)))
+            * Mat4::from_translation(Vec3::new(0.0, 0.0, -near));
 
         Self::Orthographic(
             CameraConfig::new(
@@ -168,12 +190,14 @@ impl Camera {
 
         let near = 1e-2;
         let far = 1000.0;
-        let projection = Transform::from_mat3_translation(
-            Mat3::from_diagonal(Vec3::new(1.0, 1.0, far / (far - near))),
-            Vec3::new(0.0, 0.0, -far * near / (far - near))
-        );
+        let projection = Mat4::from_cols_array_2d(&[
+            [1.0, 0.0, 0.0, 0.0],
+            [0.0, 1.0, 0.0, 0.0],
+            [0.0, 0.0, (far + near) / (far - near), -2.0 * far * near / (far - near)],
+            [0.0, 0.0, 1.0, 0.0],
+        ]).transpose();
         let tan_vfov_inv = 1.0 / (vfov.to_radians() / 2.0);
-        let scale = Transform::from_scale(Vec3::new(tan_vfov_inv, tan_vfov_inv, 1.0));
+        let scale = Mat4::from_diagonal(Vec4::new(tan_vfov_inv, tan_vfov_inv, 1.0, 1.0));
         let screen_to_camera = scale * projection;
 
         Self::Perspective(
@@ -185,8 +209,7 @@ impl Camera {
                 focal_length,
                 (width, height),
                 screen_to_camera,
-            ),
-            vfov.to_radians() / 2.0,
+            )
         )
     }
 
@@ -207,7 +230,7 @@ impl Camera {
 
     fn get_cfg(&self) -> &CameraConfig {
         match self {
-            Self::Orthographic(cfg, _) | Self::Perspective(cfg, _) => cfg,
+            Self::Orthographic(cfg, _) | Self::Perspective(cfg) => cfg,
         }
     }
 
@@ -239,28 +262,13 @@ impl Camera {
 
     /// Generates a ray given a point in raster space `\[0,width\] x \[0,height\]`
     pub fn generate_ray(&self, raster_xy: Vec2) -> Ray {
-        let resolution = self.get_resolution();
-        let resolution = Vec2::new(
-            resolution.x as Float,
-            resolution.y as Float,
-        );
-        let min_res = resolution.min_element();
-        // raster to screen here
-        let screen_xy = (2.0 * raster_xy - resolution) / min_res;
-
         match self {
-            Self::Perspective(cfg, vfov_half) => {
-                // is this correct ???
-                let wi_local = screen_xy.extend(
-                    resolution.y / (min_res * vfov_half.tan())
-                ).normalize();
-
+            Self::Perspective(cfg) => {
+                let wi_local = cfg.raster_to_camera(raster_xy).normalize();
                 Self::add_dof(Point::ZERO, wi_local, cfg)
             }
             Self::Orthographic(cfg, scale) => {
-                let screen_xyz = screen_xy.extend(0.0);
-                let xo_local = *scale * screen_xyz;
-
+                let xo_local = *scale * cfg.raster_to_camera(raster_xy);
                 Self::add_dof(xo_local, Direction::Z, cfg)
             }
         }
@@ -323,7 +331,7 @@ impl Camera {
     pub fn importance_sample(&self, ro: &Ray) -> FilmSample {
         match self {
             Self::Orthographic(..) => unimplemented!(),
-            Self::Perspective(cfg, _) => {
+            Self::Perspective(cfg) => {
                 let wi = ro.dir;
                 let wi_local = cfg.direction_to_local(wi);
                 let cos_theta = spherical_utils::cos_theta(wi_local);

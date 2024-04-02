@@ -36,6 +36,8 @@ mod tone_mapping;
 mod simpson_integration;
 
 type Transform = glam::DAffine3;
+type Vec4 = glam::DVec4;
+type Mat4 = glam::DMat4;
 type Vec2 = glam::DVec2;
 /// 3x3 matrix type alias
 pub type Mat3 = glam::DMat3;
