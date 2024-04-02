@@ -4,16 +4,13 @@ use crate::{
 };
 use glam::IVec2;
 use crate::tracer::{
-    film::FilmSample, ray::Ray,
-    onb::Onb, Color
+    film::FilmSample, ray::Ray, Color
 };
 
 /// Common configuration for cameras
 pub struct CameraConfig {
     /// Camera position in world space
     pub origin: Point,
-    /// Basis of camera space
-    pub camera_basis: Onb,
     /// Image resolution
     pub resolution: IVec2,
     /// Focal length i.e. distance to focal point behind camera
@@ -42,24 +39,21 @@ impl CameraConfig {
         assert!(origin != towards);
         assert!(up.length() != 0.0);
 
+        // x = right, y = down, z = towards
         let forward = (towards - origin).normalize();
         let right = forward.cross(up).normalize();
         let down = forward.cross(right);
-
-        // x = right, y = down, z = towards
-        let camera_basis = Onb::new_from_basis(right, down, forward);
-        let (width, height) = resolution;
-
         let camera_to_world = Transform::from_mat3_translation(
             Mat3::from_cols(right, down, forward).transpose(),
             origin,
         ).inverse();
 
+        let (width, height) = resolution;
+
         Self {
             lens_radius,
             focal_length,
             origin,
-            camera_basis,
             screen_to_camera,
             camera_to_world,
             resolution: IVec2::new(width, height),
@@ -174,7 +168,6 @@ impl Camera {
 
         let near = 1e-2;
         let far = 1000.0;
-        // from rows
         let projection = Transform::from_mat3_translation(
             Mat3::from_diagonal(Vec3::new(1.0, 1.0, far / (far - near))),
             Vec3::new(0.0, 0.0, -far * near / (far - near))

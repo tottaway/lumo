@@ -21,6 +21,7 @@ impl Onb {
         Self { u, v, w }
     }
 
+    #[allow(dead_code)]
     pub fn new_from_basis(u: Normal, v: Normal, w: Normal) -> Self {
         let eps = 1e-5;
         // assert orthornomality
