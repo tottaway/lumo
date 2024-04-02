@@ -21,6 +21,7 @@ pub struct CameraConfig {
     /// Radius of the camera lens
     pub lens_radius: Float,
     pub screen_to_camera: Transform,
+    pub world_to_camera: Transform,
 }
 
 impl CameraConfig {
@@ -47,12 +48,18 @@ impl CameraConfig {
         let camera_basis = Onb::new_from_basis(right, down, forward);
         let (width, height) = resolution;
 
+        let world_to_camera = Transform::from_mat3_translation(
+            Mat3::from_cols(right, down, forward).transpose(),
+            origin,
+        );
+
         Self {
             lens_radius,
             focal_length,
             origin,
             camera_basis,
             screen_to_camera,
+            world_to_camera,
             resolution: IVec2::new(width, height),
         }
     }
