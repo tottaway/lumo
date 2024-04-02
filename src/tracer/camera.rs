@@ -1,5 +1,5 @@
 use crate::{
-    Point, Direction, Float, Vec2, Transform,
+    Point, Direction, Float, Vec2, Transform, Normal,
     Mat3, Vec3, rand_utils, spherical_utils
 };
 use glam::IVec2;
@@ -21,7 +21,7 @@ pub struct CameraConfig {
     /// Radius of the camera lens
     pub lens_radius: Float,
     pub screen_to_camera: Transform,
-    pub world_to_camera: Transform,
+    pub camera_to_world: Transform,
 }
 
 impl CameraConfig {
@@ -48,10 +48,10 @@ impl CameraConfig {
         let camera_basis = Onb::new_from_basis(right, down, forward);
         let (width, height) = resolution;
 
-        let world_to_camera = Transform::from_mat3_translation(
+        let camera_to_world = Transform::from_mat3_translation(
             Mat3::from_cols(right, down, forward).transpose(),
             origin,
-        );
+        ).inverse();
 
         Self {
             lens_radius,
@@ -59,7 +59,7 @@ impl CameraConfig {
             origin,
             camera_basis,
             screen_to_camera,
-            world_to_camera,
+            camera_to_world,
             resolution: IVec2::new(width, height),
         }
     }
@@ -209,9 +209,9 @@ impl Camera {
 
             (lens_xyz, focus_xyz - lens_xyz)
         };
-        // refactor camera basis to DAffine3
-        let xo = cfg.origin + cfg.camera_basis.to_world(xo_local);
-        let wi = cfg.camera_basis.to_world(wi_local);
+
+        let xo = cfg.camera_to_world.transform_point3(xo_local);
+        let wi = cfg.camera_to_world.transform_vector3(wi_local);
         Ray::new(xo, wi)
     }
 
@@ -249,7 +249,7 @@ impl Camera {
         let cfg = self.get_cfg();
         let xo_local = rand_utils::square_to_disk(rand_sq).extend(0.0)
             * cfg.lens_radius;
-        let xo = cfg.origin + cfg.camera_basis.to_world(xo_local);
+        let xo = cfg.camera_to_world.transform_point3(xo_local);
 
         let wi = (xi - xo).normalize();
 
@@ -261,7 +261,7 @@ impl Camera {
         let cfg = self.get_cfg();
         let xo = ro.origin;
         let wi = ro.dir;
-        let ng = cfg.camera_basis.to_world(Direction::Z);
+        let ng = cfg.camera_to_world.transform_vector3(Normal::Z);
 
         let lens_area = if cfg.lens_radius == 0.0 {
             1.0
@@ -303,7 +303,7 @@ impl Camera {
             Self::Orthographic(..) => unimplemented!(),
             Self::Perspective(cfg, _) => {
                 let wi = ro.dir;
-                let wi_local = cfg.camera_basis.to_local(wi);
+                let wi_local = cfg.camera_to_world.inverse().transform_vector3(wi);
                 let cos_theta = spherical_utils::cos_theta(wi_local);
                 if cos_theta <= 0.0 {
                     return FilmSample::default();
@@ -316,7 +316,7 @@ impl Camera {
                     cfg.focal_length / cos_theta
                 };
                 let focus = ro.at(fl);
-                let focus_local = cfg.camera_basis.to_local(focus) + cfg.origin;
+                let focus_local = cfg.camera_to_world.inverse().transform_point3(focus);
 
                 // compute intensity
                 let resolution = self.get_resolution();
