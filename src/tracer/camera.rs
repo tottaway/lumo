@@ -101,12 +101,9 @@ impl CameraConfig {
     }
 
     pub fn raster_to_camera(&self, raster_xy: Vec2) -> Point {
-        // perspective breaks at 0.0, but 1.0 is kind of ok
-        let raster_xyz = raster_xy.extend(1.0);
+        let raster_xyz = raster_xy.extend(0.0);
         let screen_xyz = self.raster_to_screen.transform_point3(raster_xyz);
-        let camera_xyzw = self.screen_to_camera * screen_xyz.extend(1.0);
-
-        camera_xyzw.truncate() / camera_xyzw.w
+        (self.screen_to_camera * screen_xyz.extend(1.0)).truncate()
     }
 }
 
@@ -146,7 +143,7 @@ impl Camera {
 
         let near = 0.0;
         let far = 1.0;
-        let screen_to_camera = Mat4::from_scale(Vec3::new(1.0, 1.0, 1.0 / (far - near)))
+        let camera_to_screen = Mat4::from_scale(Vec3::new(1.0, 1.0, 1.0 / (far - near)))
             * Mat4::from_translation(Vec3::new(0.0, 0.0, -near));
 
         Self::Orthographic(
@@ -157,7 +154,7 @@ impl Camera {
                 lens_radius,
                 focal_length,
                 (width, height),
-                screen_to_camera,
+                camera_to_screen.inverse(),
             ),
             image_plane_scale,
         )
@@ -189,16 +186,18 @@ impl Camera {
         assert!(vfov > 0.0 && vfov < 180.0);
 
         let near = 1e-2;
-        let far = 1000.0;
-        let projection = Mat4::from_cols_array_2d(&[
-            [1.0, 0.0, 0.0, 0.0],
-            [0.0, 1.0, 0.0, 0.0],
-            [0.0, 0.0, (far + near) / (far - near), -2.0 * far * near / (far - near)],
-            [0.0, 0.0, 1.0, 0.0],
-        ]).transpose();
+        let far = 1e3;
+        let a = far / (far - near);
+        let b = -far * near / (far - near);
+        let projection = Mat4::from_cols(
+            Vec4::new(1.0, 0.0, 0.0, 0.0),
+            Vec4::new(0.0, 1.0, 0.0, 0.0),
+            Vec4::new(0.0, 0.0, a,   b),
+            Vec4::new(0.0, 0.0, 1.0, 0.0),
+        ).transpose();
         let tan_vfov_inv = 1.0 / (vfov.to_radians() / 2.0);
-        let scale = Mat4::from_diagonal(Vec4::new(tan_vfov_inv, tan_vfov_inv, 1.0, 1.0));
-        let screen_to_camera = scale * projection;
+        let scale = Mat4::from_scale(Vec3::new(tan_vfov_inv, tan_vfov_inv, 1.0));
+        let camera_to_screen = scale * projection;
 
         Self::Perspective(
             CameraConfig::new(
@@ -208,7 +207,7 @@ impl Camera {
                 lens_radius,
                 focal_length,
                 (width, height),
-                screen_to_camera,
+                camera_to_screen.inverse(),
             )
         )
     }
