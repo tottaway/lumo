@@ -105,6 +105,12 @@ impl CameraConfig {
         let screen_xyz = self.raster_to_screen.transform_point3(raster_xyz);
         (self.screen_to_camera * screen_xyz.extend(1.0)).truncate()
     }
+
+    pub fn camera_to_raster(&self, xo_local: Point) -> Vec2 {
+        let screen_xyz = self.screen_to_camera.inverse().project_point3(xo_local);
+        let raster_xyz = self.raster_to_screen.inverse().transform_point3(screen_xyz);
+        raster_xyz.truncate()
+    }
 }
 
 /// Camera abstraction
@@ -346,15 +352,7 @@ impl Camera {
                 };
                 let focus = ro.at(fl);
                 let focus_local = cfg.point_to_local(focus);
-
-                // compute intensity
-                let resolution = self.get_resolution();
-                let resolution = Vec2::new(
-                    resolution.x as Float,
-                    resolution.y as Float,
-                );
-                let min_res = resolution.min_element();
-                let raster_xy = (focus_local.truncate() * min_res + resolution) / 2.0;
+                let raster_xy = cfg.camera_to_raster(focus_local);
 
                 let lens_area = if cfg.lens_radius == 0.0 {
                     1.0
