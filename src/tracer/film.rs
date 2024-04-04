@@ -158,7 +158,8 @@ impl Film {
     fn rgb_image(&self) -> Vec<u8> {
         let mut img = Vec::new();
 
-        for y in 0..self.resolution.y {
+        // png wants pixels top to bottom, so we reverse (in raster 0 should be up, though)
+        for y in (0..self.resolution.y).rev() {
             for x in 0..self.resolution.x {
                 let idx = (x + y * self.resolution.x) as usize;
                 let col = self.pixels[idx].splat * self.splat_scale +

@@ -55,12 +55,12 @@ impl CameraConfig {
         let screen_min = Vec2::new(-1.0, -1.0);
         let screen_max = Vec2::new(1.0, 1.0);
         let screen_delta = screen_max - screen_min;
-        // something wrong here, we should flip y axis in raster as it grows down.
-        // but if we do, image is upside down, bug somewhere else?
         let screen_to_raster =
-            Transform::from_scale(Vec3::new(width as Float, height as Float, 1.0))
+            // ndc_to_raster
+            Transform::from_scale(Vec3::new(width as Float, -height as Float, 1.0))
+            // screen_to_ndc
             * Transform::from_scale(Vec3::new(1.0 / screen_delta.x, 1.0 / screen_delta.y, 1.0))
-            * Transform::from_translation(Vec3::new(-screen_min.x, -screen_min.y, 0.0));
+            * Transform::from_translation(Vec3::new(-screen_min.x, -screen_max.y, 0.0));
         let raster_to_screen = screen_to_raster.inverse();
 
         Self {
