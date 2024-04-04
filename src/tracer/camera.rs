@@ -318,14 +318,14 @@ impl Camera {
             0.0
         } else {
             let area_coeff = {
+                // store in cfg?
                 let res = self.get_resolution();
-                let res = Vec2::new(
-                    res.x as Float,
-                    res.y as Float,
-                );
-                let min_res = res.min_element();
-                let screen_bounds = res / min_res;
-                screen_bounds.x * screen_bounds.y
+                let p_min = cfg.raster_to_camera(Vec2::new(0.0, 0.0));
+                let p_min = p_min / p_min.z;
+                let p_max = cfg.raster_to_camera(Vec2::new(res.x as Float, res.y as Float));
+                let p_max = p_max / p_max.z;
+
+                ((p_max.x - p_min.x) * (p_max.y - p_min.y)).abs()
             };
 
             1.0 / (area_coeff * cos_theta * cos_theta * cos_theta)
