@@ -4,7 +4,9 @@ use super::*;
 pub struct Vertex<'a> {
     pub h: Hit<'a>,
     pub gathered: Color,
+    /// In area measure
     pub pdf_fwd: Float,
+    /// In area measure
     pub pdf_bck: Float,
 }
 
@@ -51,6 +53,7 @@ impl<'a> Vertex<'a> {
         let pdf_fwd = if h.material.is_delta() {
             0.0
         } else {
+            // convert SA to area
             let xo = prev.h.p;
             let xi = h.p;
             let wi = (xi - xo).normalize();
