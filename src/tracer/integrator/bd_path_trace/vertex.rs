@@ -151,7 +151,7 @@ impl<'a> Vertex<'a> {
         // curr
         let xi = ho.p;
         // prev -> curr
-        let wo = xi - xo;
+        let wo = (xi - xo).normalize();
         // next
         let xii = next.h.p;
         // curr -> next
