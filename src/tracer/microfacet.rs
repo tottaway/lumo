@@ -186,7 +186,7 @@ impl MfDistribution {
         let r_par: Complex<Float> = (eta * cos_o - cos_i) / (eta * cos_o + cos_i);
         let r_per: Complex<Float> = (cos_o - eta * cos_i) / (cos_o + eta * cos_i);
 
-        (r_par.norm() + r_per.norm()) / 2.0
+        (r_par.norm_sqr() + r_per.norm_sqr()) / 2.0
     }
 
     fn fr_transmission(&self, v: Direction, wh: Normal) -> Float {
