@@ -15,22 +15,13 @@ fn main() -> Result<(), std::io::Error> {
     scene.add(Sphere::new(
         Vec3::new(-0.45, -0.5, -1.5),
         0.25,
-        Material::metal(
-            Texture::Solid(Color::WHITE),
-            0.0,
-            2.5,
-            0.0,
-        )
+        Material::mirror(),
     ));
 
     scene.add(Sphere::new(
         Vec3::new(0.45, -0.5, -1.3),
         0.25,
-        Material::transparent(
-            Texture::Solid(Color::WHITE),
-            0.0,
-            2.5,
-        ),
+        Material::glass(2.5),
     ));
 
     let renderer = Renderer::new(scene, camera);
