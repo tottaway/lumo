@@ -32,31 +32,31 @@ fn diffuse_white_furnace() {
 
 #[test]
 fn conductor75_white_furnace() {
-    let m = Material::rough_mirror(white_texture(), 0.75, true);
+    let m = Material::metal(white_texture(), 0.75, 2.5, 0.0);
     test_material(m);
 }
 
 #[test]
 fn conductor50_white_furnace() {
-    let m = Material::rough_mirror(white_texture(), 0.50, true);
+    let m = Material::metal(white_texture(), 0.50, 2.5, 0.0);
     test_material(m);
 }
 
 #[test]
 fn conductor25_white_furnace() {
-    let m = Material::rough_mirror(white_texture(), 0.25, true);
+    let m = Material::metal(white_texture(), 0.25, 2.5, 0.0);
     test_material(m);
 }
 
 #[test]
 fn conductor10_white_furnace() {
-    let m = Material::rough_mirror(white_texture(), 0.10, true);
+    let m = Material::metal(white_texture(), 0.10, 2.5, 0.0);
     test_material(m);
 }
 
 #[test]
 fn conductor0_white_furnace() {
-    let m = Material::rough_mirror(white_texture(), 0.00, true);
+    let m = Material::metal(white_texture(), 0.00, 2.5, 0.0);
     test_material(m);
 }
 

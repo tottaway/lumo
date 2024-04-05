@@ -32,7 +32,7 @@ fn main() -> Result<(), std::io::Error> {
     scene.add(Plane::new(
         ground * Vec3::Y,
         Vec3::Y,
-        Material::rough_mirror(Texture::Solid(Color::new(150, 40, 39)), 0.009999, true),
+        Material::metal(Texture::Solid(Color::new(150, 40, 39)), 0.009999, 2.5, 0.0),
     ));
 
     let r = 0.2;

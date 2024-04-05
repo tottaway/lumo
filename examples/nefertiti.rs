@@ -52,10 +52,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     /* bust */
     scene.add(
-        Cube::new(Material::rough_mirror(
+        Cube::new(Material::metal(
             Texture::Solid(Color::new(61, 45, 36)),
             0.0,
-            true,
+            2.5,
+            0.0,
         ))
         .translate(-0.5, -0.5, -0.5)
         .scale(0.45, 0.5, 0.45)

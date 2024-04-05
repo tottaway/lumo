@@ -44,12 +44,18 @@ impl Material {
     }
 
     /// Microfacet mirror with assignable roughness
-    pub fn rough_mirror(texture: Texture, roughness: Float, fresnel_enabled: bool) -> Self {
-        let eta = 2.5;
-        let k = 0.0;
-        let mfd = MfDistribution::new(roughness, eta, k, fresnel_enabled);
-        let bsdf = BSDF::new(BxDF::MfConductor(mfd));
-        Self::Microfacet(bsdf, texture, mfd)
+    pub fn metal(texture: Texture, roughness: Float, eta: Float, k: Float) -> Self {
+        let is_transparent = false;
+        let fresnel_enabled = true;
+
+        Self::microfacet(
+            texture,
+            roughness,
+            eta,
+            k,
+            is_transparent,
+            fresnel_enabled,
+        )
     }
 
     /// Diffuse material
