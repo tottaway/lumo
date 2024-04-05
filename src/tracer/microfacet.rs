@@ -167,8 +167,7 @@ impl MfDistribution {
     /// * `wh`     - Microsurface normal in shading space
     pub fn f(&self, v: Direction, wh: Normal) -> Float {
         if self.k() == 0.0 {
-            // use simpler form of fresnel equations for dielectrics
-            self.fr_transmission(v, wh)
+            self.fr_real(v, wh)
         } else {
             self.fr_complex(v, wh)
         }
@@ -189,29 +188,24 @@ impl MfDistribution {
         (r_par.norm_sqr() + r_per.norm_sqr()) / 2.0
     }
 
-    fn fr_transmission(&self, v: Direction, wh: Normal) -> Float {
+    fn fr_real(&self, v: Direction, wh: Normal) -> Float {
         let cos_o = v.dot(wh);
         let inside = cos_o < 0.0;
-        let (eta_o, eta_i) = if inside {
-            (self.eta(), 1.0)
-        } else {
-            (1.0, self.eta())
-        };
+        let eta = if inside { 1.0 / self.eta() } else { self.eta() };
+
         let cos_o = cos_o.abs();
-        let sin_o = (1.0 - cos_o * cos_o).max(0.0).sqrt();
-        let sin_i = eta_o / eta_i * sin_o;
+        let sin2_o = 1.0 - cos_o * cos_o;
+        let sin2_i = sin2_o / (eta * eta);
 
         // total internal reflection
-        if sin_i >= 1.0 {
+        if sin2_i >= 1.0 {
             return 1.0;
         }
 
-        let cos_i = (1.0 - sin_i * sin_i).max(0.0).sqrt();
+        let cos_i = (1.0 - sin2_i).max(0.0).sqrt();
 
-        let r_par = ( (eta_i * cos_o) - (eta_o * cos_i) )
-                  / ( (eta_i * cos_o) + (eta_o * cos_i) );
-        let r_per = ( (eta_o * cos_o) - (eta_i * cos_i) )
-                  / ( (eta_o * cos_o) + (eta_i * cos_i) );
+        let r_par = (eta * cos_o - cos_i) / (eta * cos_o + cos_i);
+        let r_per = (cos_o - eta * cos_i) / (cos_o + eta * cos_i);
 
         (r_par * r_par + r_per * r_per) / 2.0
     }
