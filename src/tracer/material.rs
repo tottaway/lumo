@@ -96,7 +96,7 @@ impl Material {
     pub fn mirror() -> Self {
         let texture = Texture::Solid(Color::WHITE);
         let roughness = 0.0;
-        let eta = 2.5;
+        let eta = 1e5;
         let k = 0.0;
         let is_transparent = false;
         let fresnel_enabled = true;
