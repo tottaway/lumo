@@ -113,7 +113,6 @@ impl Material {
 
     /// Perfect refraction
     pub fn glass(eta: Float) -> Self {
-        assert!(eta >= 1.0);
         let texture = Texture::Solid(Color::WHITE);
         let roughness = 0.0;
         let k = 0.0;

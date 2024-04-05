@@ -22,11 +22,11 @@ impl MicrofacetConfig {
         fresnel_enabled: bool,
     ) -> Self {
         assert!((0.0..=1.0).contains(&roughness));
-        //assert!((0.0..=1.0).contains(&metallicity));
-        assert!(eta >= 1.0);
+        assert!(eta > 0.0);
+        assert!(k >= 0.0);
 
         Self {
-            roughness: Vec2::splat(roughness.max(1e-5)),
+            roughness: Vec2::splat(roughness),
             eta,
             k,
             fresnel_enabled,
@@ -48,10 +48,10 @@ impl MfDistribution {
     pub fn new(
         roughness: Float,
         eta: Float,
-        metallicity: Float,
+        k: Float,
         fresnel_enabled: bool
     ) -> Self {
-        Self::Ggx(MicrofacetConfig::new(roughness, eta, metallicity, fresnel_enabled))
+        Self::Ggx(MicrofacetConfig::new(roughness, eta, k, fresnel_enabled))
     }
 
     /// might need tuning, send ratio that emittance is multiplied with?
