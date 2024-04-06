@@ -41,12 +41,12 @@ impl CameraConfig {
         assert!(origin != towards);
         assert!(up.length() != 0.0);
 
-        // x = right, y = down, z = towards
+        // x = right, y = up, z = towards
         let forward = (towards - origin).normalize();
         let right = forward.cross(up).normalize();
-        let down = forward.cross(right);
+        let up = right.cross(forward);
         let camera_to_world = Transform::from_mat3_translation(
-            Mat3::from_cols(right, down, forward).transpose(),
+            Mat3::from_cols(right, up, forward).transpose(),
             origin,
         ).inverse();
 
