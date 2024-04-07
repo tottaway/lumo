@@ -94,7 +94,7 @@ fn connect_light_path(
     sample.color *= light_last.gathered
         * scene.transmittance(t2.sqrt())
         * shading_cosine
-        * light_last.bsdf(light_scnd_last, camera_last, Transport::Importance)
+        * light_last.bsdf(camera_last, Transport::Importance)
         * mis::mis_weight(camera, light_path, s, camera_path, 1, sampled_vertex);
 
     Some(sample)
@@ -161,7 +161,6 @@ fn connect_paths(
                             ));
                             let light_last = sampled_vertex.as_ref().unwrap();
                             let bsdf = camera_last.bsdf(
-                                &camera_path[t - 2],
                                 light_last,
                                 Transport::Radiance,
                             );
@@ -189,12 +188,10 @@ fn connect_paths(
                 Color::BLACK
             } else {
                 let light_bsdf = light_last.bsdf(
-                    &light_path[s - 2],
                     camera_last,
                     Transport::Importance,
                 );
                 let camera_bsdf = camera_last.bsdf(
-                    &camera_path[t - 2],
                     light_last,
                     Transport::Radiance,
                 );

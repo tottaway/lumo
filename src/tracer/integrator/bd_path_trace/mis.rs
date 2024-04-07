@@ -40,8 +40,7 @@ pub fn mis_weight(
         } else if s == 1 {
             ls.pdf_light_leaving(ct)
         } else {
-            let ls_m = &light_path[s - 2];
-            ls.pdf_area(ls_m, ct, Transport::Importance)
+            ls.pdf_area(ct, Transport::Importance)
         };
 
         ri *= map0(pdf_prev) / map0(ct.pdf_fwd);
@@ -54,7 +53,7 @@ pub fn mis_weight(
         let pdf_prev = if s == 0 {
             ct.pdf_light_leaving(ct_m)
         } else {
-            ct.pdf_area(ls, ct_m, Transport::Importance)
+            ct.pdf_area(ct_m, Transport::Importance)
         };
         ri *= map0(pdf_prev) / map0(ct_m.pdf_fwd);
         if !ct_m.is_delta() {
@@ -81,8 +80,7 @@ pub fn mis_weight(
             let wi = (xi - xo).normalize();
             camera.pdf_wi(wi)
         } else {
-            let ct_m = &camera_path[t - 2];
-            ct.pdf_area(ct_m, ls, Transport::Radiance)
+            ct.pdf_area(ls, Transport::Radiance)
         };
         ri *= map0(pdf_prev) / map0(ls.pdf_fwd);
         sum_ri += ri;
@@ -91,7 +89,7 @@ pub fn mis_weight(
     // applies the updated PDF at light_last using the connection
     if s > 1 {
         let ls_m = &light_path[s - 2];
-        let pdf_prev = ls.pdf_area(ct, ls_m, Transport::Radiance);
+        let pdf_prev = ls.pdf_area(ls_m, Transport::Radiance);
 
         ri *= map0(pdf_prev) / map0(ls_m.pdf_fwd);
         if !ls_m.is_delta() {

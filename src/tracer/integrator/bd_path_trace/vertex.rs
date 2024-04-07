@@ -8,6 +8,8 @@ pub struct Vertex<'a> {
     pub pdf_fwd: Float,
     /// In area measure
     pub pdf_bck: Float,
+    /// Direction from previous vertex (if exists)
+    pub wo: Direction,
 }
 
 impl<'a> Vertex<'a> {
@@ -28,6 +30,7 @@ impl<'a> Vertex<'a> {
             gathered,
             pdf_bck: 1.0,
             pdf_fwd: 0.0,
+            wo: Direction::ZERO,
         }
     }
 
@@ -40,6 +43,7 @@ impl<'a> Vertex<'a> {
             pdf_bck,
             // this might cause issues later on (if area is zero, point light?)...
             pdf_fwd: 1.0 / light.area(),
+            wo: Direction::ZERO,
         }
     }
 
@@ -50,22 +54,22 @@ impl<'a> Vertex<'a> {
         pdf_fwd: Float,
         prev: &Vertex,
     ) -> Self {
+        let xo = prev.h.p;
+        let xi = h.p;
+        let wo = (xi - xo).normalize();
         let pdf_fwd = if h.material.is_delta() {
             0.0
         } else {
             // convert SA to area
-            let xo = prev.h.p;
-            let xi = h.p;
-            let wi = (xi - xo).normalize();
             let ng = h.ng;
-
-            pdf_fwd * wi.dot(ng).abs() / xi.distance_squared(xo)
+            pdf_fwd * wo.dot(ng).abs() / xi.distance_squared(xo)
         };
         Self {
             h,
             gathered,
             pdf_fwd,
             pdf_bck: 0.0,
+            wo,
         }
     }
 
@@ -103,12 +107,10 @@ impl<'a> Vertex<'a> {
     }
 
     /// Computes BSDF at hit of `self`
-    pub fn bsdf(&self, prev: &Vertex, next: &Vertex, mode: Transport) -> Color {
-        // TODO (2)
-        let wo = (self.h.p - prev.h.p).normalize();
+    pub fn bsdf(&self, next: &Vertex, mode: Transport) -> Color {
         let wi = (next.h.p - self.h.p).normalize();
 
-        self.material().bsdf_f(wo, wi, mode, &self.h)
+        self.material().bsdf_f(self.wo, wi, mode, &self.h)
     }
 
     /// Converts solid angle `pdf` to area PDF
@@ -147,27 +149,23 @@ impl<'a> Vertex<'a> {
     }
 
     /// PDF to sample direction to `next` from `curr` w.r.t. surface area measure
-    pub fn pdf_area(&self, prev: &Vertex, next: &Vertex, mode: Transport) -> Float {
+    pub fn pdf_area(&self, next: &Vertex, mode: Transport) -> Float {
         let ho = &self.h;
-        // prev
-        let xo = prev.h.p;
         // curr
-        let xi = ho.p;
-        // prev -> curr
-        let wo = (xi - xo).normalize();
+        let xo = ho.p;
         // next
-        let xii = next.h.p;
+        let xi = next.h.p;
         // curr -> next
-        let wi = xii - xi;
+        let wi = xi - xo;
         let ri = Ray::new(xi, wi);
         // normalized
         let wi = ri.dir;
         let angle_pdf = self.material()
-            .bsdf_pdf(wo, wi, ho, matches!(mode, Transport::Importance));
+            .bsdf_pdf(self.wo, wi, ho, matches!(mode, Transport::Importance));
         let ng = next.h.ng;
 
         // convert solid angle to area at next
-        angle_pdf * wi.dot(ng).abs() / xi.distance_squared(xii)
+        angle_pdf * wi.dot(ng).abs() / xi.distance_squared(xo)
     }
 
     pub fn pdf_light_origin(&self) -> Float {
