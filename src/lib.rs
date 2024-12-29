@@ -53,9 +53,10 @@ const NEG_INF: Float = f64::NEG_INFINITY;
 const EPSILON: Float = 1e-10;
 
 type Normal = Vec3;
-type Direction = Vec3;
-type Point = Vec3;
-
+/// Direction in 3D space
+pub type Direction = Vec3;
+/// Point in 3D space
+pub type Point = Vec3;
 
 /// Enum to determine from which direction we are tracing rays
 #[derive(Copy, Clone)]
