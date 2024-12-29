@@ -1,11 +1,9 @@
+use crate::tracer::{film::FilmSample, ray::Ray, Color};
 use crate::{
-    Point, Direction, Float, Vec2, Transform, Normal,
-    Mat3, Mat4, Vec4, Vec3, rand_utils, spherical_utils
+    rand_utils, spherical_utils, Direction, Float, Mat3, Mat4, Normal, Point, Transform, Vec2,
+    Vec3, Vec4,
 };
 use glam::IVec2;
-use crate::tracer::{
-    film::FilmSample, ray::Ray, Color
-};
 
 /// Common configuration for cameras
 pub struct CameraConfig {
@@ -48,7 +46,8 @@ impl CameraConfig {
         let camera_to_world = Transform::from_mat3_translation(
             Mat3::from_cols(right, up, forward).transpose(),
             origin,
-        ).inverse();
+        )
+        .inverse();
 
         let (width, height) = resolution;
 
@@ -198,24 +197,27 @@ impl Camera {
         let projection = Mat4::from_cols(
             Vec4::new(1.0, 0.0, 0.0, 0.0),
             Vec4::new(0.0, 1.0, 0.0, 0.0),
-            Vec4::new(0.0, 0.0, a,   b),
+            Vec4::new(0.0, 0.0, a, b),
             Vec4::new(0.0, 0.0, 1.0, 0.0),
-        ).transpose();
+        )
+        .transpose();
         let tan_vfov_inv = 1.0 / (vfov.to_radians() / 2.0);
-        let scale = Mat4::from_scale(Vec3::new(tan_vfov_inv, tan_vfov_inv, 1.0));
+        let scale = Mat4::from_scale(Vec3::new(
+            tan_vfov_inv * height as f64 / width as f64,
+            tan_vfov_inv,
+            1.0,
+        ));
         let camera_to_screen = scale * projection;
 
-        Self::Perspective(
-            CameraConfig::new(
-                origin,
-                towards,
-                up,
-                lens_radius,
-                focal_length,
-                (width, height),
-                camera_to_screen.inverse(),
-            )
-        )
+        Self::Perspective(CameraConfig::new(
+            origin,
+            towards,
+            up,
+            lens_radius,
+            focal_length,
+            (width, height),
+            camera_to_screen.inverse(),
+        ))
     }
 
     /// The "default" camera. Perspective camera at world space origin
@@ -249,8 +251,7 @@ impl Camera {
         let (xo_local, wi_local) = if cfg.lens_radius == 0.0 {
             (xo_local, wi_local)
         } else {
-            let lens_xy = cfg.lens_radius
-                * rand_utils::square_to_disk(rand_utils::unit_square());
+            let lens_xy = cfg.lens_radius * rand_utils::square_to_disk(rand_utils::unit_square());
             let lens_xyz = lens_xy.extend(0.0);
 
             let focus_distance = cfg.focal_length / wi_local.z;
@@ -282,8 +283,7 @@ impl Camera {
     /// Samples a ray leaving from the lens of the camera towards `xi`
     pub fn sample_towards(&self, xi: Point, rand_sq: Vec2) -> Ray {
         let cfg = self.get_cfg();
-        let xo_local = rand_utils::square_to_disk(rand_sq).extend(0.0)
-            * cfg.lens_radius;
+        let xo_local = rand_utils::square_to_disk(rand_sq).extend(0.0) * cfg.lens_radius;
         let xo = cfg.point_to_world(xo_local);
 
         let wi = (xi - xo).normalize();

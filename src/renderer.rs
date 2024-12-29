@@ -1,11 +1,6 @@
-use crate::{
-    Vec2, Float, TracerCli,
-    samplers::JitteredSampler, ToneMap
-};
-use crate::tracer::{
-    Camera, Film, FilmSample,
-    Integrator, Scene, Filter, FilmTile
-};
+use crate::tracer::{Camera, Film, FilmSample, FilmTile, Filter, Integrator, Scene};
+use crate::{samplers::JitteredSampler, Float, ToneMap, TracerCli, Vec2};
+use clap::Parser;
 use glam::IVec2;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use std::{sync::Mutex, time::Instant};
@@ -33,7 +28,12 @@ impl Renderer {
     pub fn new(scene: Scene, camera: Camera) -> Self {
         assert!(scene.num_lights() != 0);
 
-        let cli_args: TracerCli = argh::from_env();
+        let cli_args: TracerCli = TracerCli::try_parse().unwrap_or(TracerCli {
+            samples: 1,
+            threads: None,
+            direct_light: false,
+            bd_path_trace: false,
+        });
         cli_args.set_threads();
 
         let resolution = camera.get_resolution();
@@ -82,11 +82,7 @@ impl Renderer {
         );
 
         let start = Instant::now();
-        let mut film = Film::new(
-            self.resolution.x,
-            self.resolution.y,
-            self.num_samples,
-        );
+        let mut film = Film::new(self.resolution.x, self.resolution.y, self.num_samples);
 
         let mutex = Mutex::new(&mut film);
 
@@ -99,22 +95,21 @@ impl Renderer {
             samples_taken = samples_taken.min(self.num_samples);
             let samples = samples_taken - prev;
 
-            (0..tiles_y).into_par_iter()
-                .for_each(|y: i32| {
-                    (0..tiles_x).for_each(|x: i32| {
-                        let px_min = IVec2::new(x, y) * TILE_SIZE;
-                        let px_max = px_min + TILE_SIZE;
-                        let mut tile = self.get_tile(px_min, px_max);
+            (0..tiles_y).into_par_iter().for_each(|y: i32| {
+                (0..tiles_x).for_each(|x: i32| {
+                    let px_min = IVec2::new(x, y) * TILE_SIZE;
+                    let px_max = px_min + TILE_SIZE;
+                    let mut tile = self.get_tile(px_min, px_max);
 
-                        for y in tile.px_min.y..tile.px_max.y {
-                            for x in tile.px_min.x..tile.px_max.x {
-                                self.get_samples(&mut tile, samples, x, y)
-                            }
+                    for y in tile.px_min.y..tile.px_max.y {
+                        for x in tile.px_min.x..tile.px_max.x {
+                            self.get_samples(&mut tile, samples, x, y)
                         }
+                    }
 
-                        mutex.lock().unwrap().add_tile(tile);
-                    })
-                });
+                    mutex.lock().unwrap().add_tile(tile);
+                })
+            });
         }
         println!("Finished rendering in {:#?}", start.elapsed());
         film

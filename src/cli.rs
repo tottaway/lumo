@@ -1,22 +1,24 @@
 use crate::tracer::Integrator;
+use clap::Parser;
 
-#[derive(argh::FromArgs)]
+#[derive(Parser, Debug)]
+#[command(version, about, long_about = None)]
 /// Optional CLI configuration of renderer. Renderer setter methods have priority.
 pub struct TracerCli {
     /// number of samples per pixel (defaults to 1)
-    #[argh(option, short = 's', default = "1")]
+    #[arg(short, long, default_value_t = 1)]
     pub samples: i32,
 
     /// number of threads used (defaults to all)
-    #[argh(option, short = 't')]
+    #[arg(short, long)]
     pub threads: Option<usize>,
 
     /// use direct light integrator instead of path tracing
-    #[argh(switch, short = 'd', long = "direct")]
+    #[arg(short, long = "direct")]
     pub direct_light: bool,
 
     /// use bidirectional path tracing instead of path tracing
-    #[argh(switch, short = 'b', long = "bdpt")]
+    #[arg(short, long = "bdpt")]
     pub bd_path_trace: bool,
 }
 

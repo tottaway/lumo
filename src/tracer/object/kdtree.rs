@@ -1,5 +1,6 @@
 use super::*;
 use crate::cli::TracerCli;
+use clap::Parser;
 use std::time::Instant;
 
 /// Triangle mesh constructed as a kD-tree
@@ -33,14 +34,15 @@ impl<T: Bounded> KdTree<T> {
         }
 
         let indices = (0..objects.len()).collect();
-        let bounds: Vec<AaBoundingBox> = objects
-            .iter()
-            .map(|obj| obj.bounding_box()).collect();
+        let bounds: Vec<AaBoundingBox> = objects.iter().map(|obj| obj.bounding_box()).collect();
         let boundary = bounds
             .iter()
             .fold(AaBoundingBox::default(), |b1, b2| b1.merge(b2));
 
-        let threads = argh::from_env::<TracerCli>().threads.unwrap_or(0);
+        let threads = match TracerCli::try_parse() {
+            Ok(cli_args) => cli_args.threads.unwrap_or(0),
+            Err(_) => 0,
+        };
         let pool = rayon::ThreadPoolBuilder::new()
             .num_threads(threads)
             .build()
@@ -123,7 +125,8 @@ impl<T: Bounded> KdTree<T> {
                     if h1.t < t_split {
                         Some(h1)
                     } else {
-                        self.hit_subtree(node_second, r, t_min, h1.t, &aabb_second).or(Some(h1))
+                        self.hit_subtree(node_second, r, t_min, h1.t, &aabb_second)
+                            .or(Some(h1))
                     }
                 }
             }
@@ -190,9 +193,10 @@ impl KdNode {
         } else {
             let (left, right) = boundary.split(axis, point);
 
-            let cost = COST_TRAVERSE + COST_INTERSECT *
-                (num_left as Float * left.area() / boundary.area()
-                 + num_right as Float * right.area() / boundary.area());
+            let cost = COST_TRAVERSE
+                + COST_INTERSECT
+                    * (num_left as Float * left.area() / boundary.area()
+                        + num_right as Float * right.area() / boundary.area());
 
             if num_left == 0 || num_right == 0 {
                 (1.0 - EMPTY_BONUS) * cost
@@ -203,7 +207,10 @@ impl KdNode {
     }
 
     /// Finds the best split according to SAH.
-    fn find_best_split(aabbs: &Vec<&AaBoundingBox>, boundary: &AaBoundingBox) -> (Axis, Float, Float) {
+    fn find_best_split(
+        aabbs: &Vec<&AaBoundingBox>,
+        boundary: &AaBoundingBox,
+    ) -> (Axis, Float, Float) {
         let mut best_cost = crate::INF;
         let mut best_point = crate::INF;
         let mut best_axis = Axis::X;
@@ -238,7 +245,10 @@ impl KdNode {
                 let point = mins[min_idx].min(maxs[max_idx]);
 
                 // update objects on right before cost..
-                if !is_min { max_idx += 1; num_right -= 1; }
+                if !is_min {
+                    max_idx += 1;
+                    num_right -= 1;
+                }
 
                 let cost = Self::cost(boundary, axis, point, num_left, num_right);
 
@@ -249,7 +259,10 @@ impl KdNode {
                 }
 
                 // ..and objects on left after cost
-                if is_min { min_idx += 1; num_left += 1; }
+                if is_min {
+                    min_idx += 1;
+                    num_left += 1;
+                }
             }
         }
 
@@ -284,8 +297,7 @@ impl KdNode {
         indices: Vec<usize>,
     ) -> Box<Self> {
         // filter relevant AABBs
-        let aabbs: Vec<&AaBoundingBox> = indices.iter()
-            .map(|idx| &bounds[*idx]).collect();
+        let aabbs: Vec<&AaBoundingBox> = indices.iter().map(|idx| &bounds[*idx]).collect();
         let (axis, point, cost) = Self::find_best_split(&aabbs, boundary);
         // cut not worth it, make a leaf
         if cost > COST_INTERSECT * indices.len() as Float {
@@ -295,14 +307,9 @@ impl KdNode {
             let (left_bound, right_bound) = boundary.split(axis, point);
             let (left, right) = rayon::join(
                 || Self::construct(bounds, &left_bound, left_idx),
-                || Self::construct(bounds, &right_bound, right_idx)
+                || Self::construct(bounds, &right_bound, right_idx),
             );
-            Box::new(Self::Split(
-                axis,
-                point,
-                left,
-                right,
-            ))
+            Box::new(Self::Split(axis, point, left, right))
         }
     }
 }
