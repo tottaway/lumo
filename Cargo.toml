@@ -1,11 +1,11 @@
 [package]
 name = "lumo"
-version = "0.3.2"
+version = "0.3.3"
 description = "CPU based rendering engine"
 license = "MIT"
-rust-version = "1.70"
+rust-version = "1.83"
 repository = "https://github.com/ekarpp/lumo"
-authors = ["ekarpp <eetu@karppinen.xyz>"]
+authors = ["ekarpp <eetu@karppinen.xyz>, tottaway <tottaway123@gmail.com>"]
 keywords = ["rendering", "path-tracing", "graphics", "3D", "ray-tracing"]
 categories = ["graphics", "rendering::engine", "multimedia::images"]
 edition = "2021"
